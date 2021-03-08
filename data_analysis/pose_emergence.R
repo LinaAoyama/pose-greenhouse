@@ -11,7 +11,7 @@ stems <- left_join(stemcount_dat, potID) #combine potID and stemcount data in on
 ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts)) +
   geom_point()+
   geom_jitter()+
-  theme_bw()
+  theme_classic()
 #  facet_wrap(~Water)
 
 ggplot(stems, aes(x = Population, y = POSE_survival_stem_counts)) +
@@ -43,3 +43,5 @@ ggplot(summary_stems, aes(x = Population, y = mean_POSE_em))+
   geom_point()+
   geom_errorbar(aes(ymin = mean_POSE_em-se_POSE_em, ymax = mean_POSE_em+se_POSE_em), width = 0.4, alpha = 0.9, size = 1)+
   theme_bw()
+
+
