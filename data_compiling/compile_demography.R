@@ -1,2 +1,3 @@
 library(tidyverse)
-emergence_dat <- read_csv(paste(datpath, "/Greenhouse_POSE_emergence.csv", sep="")) 
+stemcount_dat <- read_csv(paste(datpath, "/Greenhouse_seedling_stem_counts.csv", sep="")) 
+potID <- read_csv(paste(datpath, "/Greenhouse_potID.csv", sep = ""))
