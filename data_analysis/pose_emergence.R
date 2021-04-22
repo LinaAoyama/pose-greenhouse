@@ -12,12 +12,13 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts)) +
   geom_point()+
   geom_jitter()+
   theme_classic()
-#  facet_wrap(~Water)
+  facet_wrap(~Water)
 
-ggplot(stems, aes(x = Population, y = POSE_survival_stem_counts)) +
+ggplot(stems, aes(x = Population, y = POSE_survival_stem_counts, col = water)) +
   geom_point()+
   geom_jitter()+
   theme_bw()
+geom_boxplot
 
 #can you think of other kinds of plots?
 
@@ -30,7 +31,7 @@ calcSE<-function(x){
 #calculate mean and se of stem counts per population
 summary_stems <- stems %>%
   filter(POSE_survival_stem_counts != "NA") %>%
-  group_by(Population) %>%
+  group_by(Population, Water) %>%
   summarize(mean_POSE_em = mean(POSE_emergence_stem_counts),
             se_POSE_em = calcSE(POSE_emergence_stem_counts),
             mean_POSE_su = mean(POSE_survival_stem_counts),
@@ -39,8 +40,9 @@ summary_stems <- stems %>%
             se_BRTE = calcSE(BRTE_stem_counts))
 
 #bar plots
-ggplot(summary_stems, aes(x = Population, y = mean_POSE_em))+
-  geom_point()+
+ggplot(summary_stems, aes(x = Population, y = mean_POSE_em))+ 
+  geom_
+  #geom_point()+
   geom_errorbar(aes(ymin = mean_POSE_em-se_POSE_em, ymax = mean_POSE_em+se_POSE_em), width = 0.4, alpha = 0.9, size = 1)+
   theme_bw()
 
