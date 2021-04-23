@@ -5,7 +5,9 @@ library(ggplot2)
 ##Import data
 source("data_compiling/compile_demography.R")
 stems <- left_join(stemcount_dat, potID) #combine potID and stemcount data in one dataframe
-leafarea<-left_join(leaftraits,potID)%>%mutate(SLA=FreshLeafArea_cm2/DryLeafWeight_g,LDMC=DryLeafWeight_g/FreshLeafWeight_g)
+leafarea<-left_join(leaftraits,potID)%>% left_join(.,biomass)%>%
+  mutate(SLA=FreshLeafArea_cm2/DryLeafWeight_g,LDMC=DryLeafWeight_g/FreshLeafWeight_g)
+
 
 ##Visualize data
 #scatter plots 
@@ -91,4 +93,5 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
     theme_classic()
   #facet_wrap(~Water)
   
+ #seeds plot separate
 
