@@ -5,7 +5,7 @@ library(ggplot2)
 ##Import data
 source("data_compiling/compile_demography.R")
 stems <- left_join(stemcount_dat, potID) #combine potID and stemcount data in one dataframe
-leafarea<-left_join(leaftraits,potID)
+leafarea<-left_join(leaftraits,potID)%>%mutate(SLA=FreshLeafArea_cm2/DryLeafWeight_g,LDMC=DryLeafWeight_g/FreshLeafWeight_g)
 
 ##Visualize data
 #scatter plots 
@@ -48,6 +48,8 @@ summary_stems <- stems %>% #object
             mean_BRTE = mean(BRTE_stem_counts),
             se_BRTE = calcSE(BRTE_stem_counts))
 
+
+
 #bar plots
 ggplot(summary_stems, aes(x = Population, y = mean_POSE_em))+ 
   #geom_
@@ -73,7 +75,7 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
 #y=biomass, x = populations
 #
  
-#figure 4 plasticity coefficient of variation
+#figure 4 plasticity coefficient of variation--- traits from leafarea object: seed weight, SLA, LDMC
  traits_cv<-leafarea %>%
   #group_by(Population) %>%
   #summarise(new column name cv_roots=sd(roots)/mean(roots))*100,cv_seedweight=sd(seedweight...)
