@@ -3,3 +3,4 @@ datpath <- "C:/Users/Lina/Dropbox/Academics/Projects/Greenhouse/Data/Cleaned_dat
 
 #Emily
 datpath <- "~/Dropbox/Greenhouse/Data/Cleaned_data"
+setwd("~/Documents/repositories/pose-greenhouse")
