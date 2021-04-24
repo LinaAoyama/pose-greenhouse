@@ -5,7 +5,7 @@ library(ggplot2)
 ##Import data
 source("data_compiling/compile_demography.R")
 stems <- left_join(stemcount_dat, potID) #combine potID and stemcount data in one dataframe
-leafarea<-left_join(leaftraits,potID)%>% left_join(.,biomass)%>%
+leafarea<-left_join(leaftraits,potID)%>% left_join(.,biomass)%>% left_join(.,height)%>%
   mutate(SLA=FreshLeafArea_cm2/DryLeafWeight_g,LDMC=DryLeafWeight_g/FreshLeafWeight_g)
 
 
@@ -71,19 +71,33 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
   #facet_wrap(~Water)
   facet_grid(~Water) #how do I make the boxplot separate by wet/dry? this doesn't seem to work...
   
-#OR#
 
 #
 #y=biomass, x = populations
 #
- 
-#figure 4 plasticity coefficient of variation--- traits from leafarea object: seed weight, SLA, LDMC
- traits_cv<-leafarea %>%
-  #group_by(Population) %>%
-  #summarise(new column name cv_roots=sd(roots)/mean(roots))*100,cv_seedweight=sd(seedweight...)
-  #
+  ggplot(leafarea, aes(x = Population, y = Dry_Biomass_Weight_g, fill=Water)) + #col=water
+    geom_boxplot()+
+    #geom_point()+
+    #geom_jitter()+
+    theme_classic()
+  #facet_wrap(~Water)
+  facet_grid(~Water) 
   
-  #%>%gather(key="traits", value="cv",-Population)
+#seed weight #this needs work...
+  ggplot(seeds, aes(x = Population, y = Weight_g))+
+    geom_boxplot()+
+    geom_point()+
+    geom_jitter()+
+    theme_classic()
+ 
+  
+#figure 4 plasticity coefficient of variation--- traits from leafarea object:  SLA, LDMC
+ traits_cv<-leafarea %>%
+  group_by(Population) %>%
+  summarise(cv_dry_biomass_weight=sd(Dry_Biomass_Weight_g)/mean(Dry_Biomass_Weight_g))*100%>%(cv_SLA=sd(SLA)/mean(SLA))*100%>%(cv_LDMC=sd(LDMC)/mean(LDMC))*100%>%(cv_height=sd(Height_cm)/mean(Height_cm))*100
+  
+  
+  %>%gather(key="traits", value="cv",-Population)
   
   #plot
   ggplot(traits_cv, aes(x = traits, y = cv, col=Population)) + #col=water
@@ -93,5 +107,5 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
     theme_classic()
   #facet_wrap(~Water)
   
- #seeds plot separate
+
 
