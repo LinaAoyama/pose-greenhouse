@@ -94,10 +94,7 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
 #figure 4 plasticity coefficient of variation--- traits from leafarea object:  SLA, LDMC
  traits_cv<-leafarea %>%
   group_by(Population) %>%
-  summarise(cv_dry_biomass_weight=sd(Dry_Biomass_Weight_g)/mean(Dry_Biomass_Weight_g))*100%>%(cv_SLA=sd(SLA)/mean(SLA))*100%>%(cv_LDMC=sd(LDMC)/mean(LDMC))*100%>%(cv_height=sd(Height_cm)/mean(Height_cm))*100
-  
-  
-  %>%gather(key="traits", value="cv",-Population)
+  summarise((cv_dry_biomass_weight=sd(Dry_Biomass_Weight_g)/mean(Dry_Biomass_Weight_g))*100,(cv_SLA=sd(SLA)/mean(SLA))*100,(cv_LDMC=sd(LDMC)/mean(LDMC))*100,(cv_height=sd(Height_cm)/mean(Height_cm))*100)%>%gather(key="traits", value="cv",-Population)
   
   #plot
   ggplot(traits_cv, aes(x = traits, y = cv, col=Population)) + #col=water
