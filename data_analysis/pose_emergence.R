@@ -26,11 +26,20 @@ ggplot(stems, aes(x = Water, y = POSE_survival_stem_counts)) + #x=Water, col=Wat
 geom_boxplot
 
 #POSE_emergence_stem_counts
+#boxplot
 ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts)) +
-  geom_point()+
+  geom_boxplot()+
   geom_jitter()+
   theme_classic()
 facet_wrap(~Water)
+
+#POSE_survival_stem_counts boxplot
+ggplot(stems, aes(x = Water, y = POSE_survival_stem_counts)) + #x=Water, col=Water
+  geom_boxplot()+
+  geom_jitter()+
+  theme_classic()
+facet_wrap(~Water)
+
 #can you think of other kinds of plots?
 
 #formula to calculate standard error
@@ -86,9 +95,17 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
 #seed weight #this needs work...
   ggplot(seeds, aes(x = Population, y = Weight_g))+
     geom_boxplot()+
-    geom_point()+
-    geom_jitter()+
+    #geom_point()+
+    #geom_jitter()+
     theme_classic()
+  
+  #height #no differences in hieght across population or water treatment?
+  ggplot(leafarea, aes(x = Population, y = Height_cm, fill=Water))+
+    geom_boxplot()+
+    #geom_point()+
+    #geom_jitter()+
+    theme_classic()
+  facet_grid(~Water) 
  
   
 #figure 4 plasticity coefficient of variation--- traits from leafarea object:  SLA, LDMC
