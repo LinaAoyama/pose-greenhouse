@@ -1,6 +1,7 @@
 ##Load R packages
 library(tidyverse)
 library(ggplot2)
+library(SingleCaseES) 
 
 ##Import data
 source("data_compiling/compile_demography.R")
@@ -39,6 +40,21 @@ ggplot(stems, aes(x = Water, y = POSE_survival_stem_counts)) + #x=Water, col=Wat
   geom_jitter()+
   theme_classic()
 facet_wrap(~Water)
+
+#hypothesis three Does poa resistance to b tectorum change with water availability/compeition?
+#POSE_survival_stem_Counts boxplot with competition
+ggplot(stems, aes(x = Competition, y = POSE_survival_stem_counts)) + #x=Water, col=Water
+  geom_boxplot()+
+  geom_jitter()+
+  theme_classic()+
+  #facet_grid(~Population)
+  facet_grid(vars(Water), vars(Population)) #this figure to show across population
+  #facet_wrap(~Water)+ # this figure to show wet vs dry
+  #facet_wrap(~Population)
+
+#to show wet and dry -- show log response ratio
+
+
 
 #can you think of other kinds of plots?
 
@@ -123,8 +139,8 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
     #geom_boxplot()+
     geom_point()+
     #geom_jitter()+
-    theme_classic()
+    theme_classic()+
   #facet_wrap(~Water)
-  
+  scale_col_manual(name = "", values = c("#b33000", "#ff4500",  "#ED7D31", "#5B9BD5"))
 
 
