@@ -108,11 +108,19 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
   #facet_wrap(~Water)
   facet_grid(~Water) 
   
+#biomass by competition
+ggplot(leafarea, aes(x = Competition, y = Dry_Biomass_Weight_g)) + #x=Water, col=Water
+  geom_boxplot()+
+  geom_jitter()+
+  theme_classic()+
+  #facet_grid(~Population)
+  facet_grid(vars(Water), vars(Population)) #added population/competition
+  
 #seed weight #this needs work...
   ggplot(seeds, aes(x = Population, y = Weight_g))+
     geom_boxplot()+
     #geom_point()+
-    #geom_jitter()+
+    geom_jitter()+
     theme_classic()
   
   #height #no differences in hieght across population or water treatment?
@@ -121,8 +129,16 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
     #geom_point()+
     #geom_jitter()+
     theme_classic()
-  facet_grid(~Water) 
- 
+  #facet_grid(~Water) 
+  facet_grid(vars(Water), vars(Population)) #added population/competition
+  
+#height across population/water/competition  
+ggplot(leafarea, aes(x = Competition, y = Height_cm)) + #x=Water, col=Water
+  geom_boxplot()+
+  geom_jitter()+
+  theme_classic()+
+  #facet_grid(~Population)
+  facet_grid(vars(Water), vars(Population)) #added population/competition
   
 #figure 4 plasticity coefficient of variation--- traits from leafarea object:  SLA, LDMC
  traits_cv<-leafarea %>%
@@ -134,12 +150,12 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
             cv_height=sd(Height_cm)/mean(Height_cm)*100)%>%
   gather(key="traits", value="cv",-Population)
   
-  #plot
-  ggplot(traits_cv, aes(x = traits, y = cv, col=Population)) + #col=water
+  #plot ## This runs error "couldnt find function "scale_col_manual""?
+ggplot(traits_cv, aes(x = traits, y = cv, col=Population)) + #col=water
     #geom_boxplot()+
-    geom_point()+
+  geom_point()+
     #geom_jitter()+
-    theme_classic()+
+  theme_classic()+
   #facet_wrap(~Water)
   scale_col_manual(name = "", values = c("#b33000", "#ff4500",  "#ED7D31", "#5B9BD5"))
 
