@@ -2,6 +2,8 @@
 library(tidyverse)
 library(ggplot2)
 library(SingleCaseES) 
+library(ARPobservation)
+install.packages("ARPobservation")
 
 ##Import data
 source("data_compiling/compile_demography.R")
@@ -41,7 +43,7 @@ ggplot(stems, aes(x = Water, y = POSE_survival_stem_counts)) + #x=Water, col=Wat
   theme_classic()
 facet_wrap(~Water)
 
-#hypothesis three Does poa resistance to b tectorum change with water availability/compeition?
+#hypothesis three Does poa resistance to b tectorum change with water availability/competition?
 #POSE_survival_stem_Counts boxplot with competition
 ggplot(stems, aes(x = Competition, y = POSE_survival_stem_counts)) + #x=Water, col=Water
   geom_boxplot()+
@@ -53,8 +55,22 @@ ggplot(stems, aes(x = Competition, y = POSE_survival_stem_counts)) + #x=Water, c
   #facet_wrap(~Population)
 
 #to show wet and dry -- show log response ratio
+#stem counts and biomass --  %>% group_by(Population, Water, Competition)
+#with(stems %>% filter(POSE_survival_stem_counts != "NA"),
+#logRespRatio(observations = POSE_survival_stem_counts, phase = Water, base_level = "Dry", conf_level = 0.95,
+#             bias_correct = TRUE, exponentiate = FALSE))
 
+#lm(Y~X) once for NONE and once for BRTE
+lm_out <- lm(POSE_survival_stem_counts ~ Water,data=stems %>%filter(Competition == "None"))
 
+beta_0 <- coef(lm_out)[1] 
+beta_1 <- coef(lm_out)[2] 
+
+# water canyon object log response ratio:
+lrr_WC_None <- log(beta_0 + beta_1) - log(beta_0)
+
+#reload csv to plot combined log rr. 
+#cbind(two objects)
 
 #can you think of other kinds of plots?
 
@@ -98,15 +114,16 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
   
 
 #
-#y=biomass, x = populations
+#y=biomass, x = populations ## this one with wet/dry/competition by using facet_Grid
 #
   ggplot(leafarea, aes(x = Population, y = Dry_Biomass_Weight_g, fill=Competition)) + #col=water ##OR fill = Water##
     geom_boxplot()+
     #geom_point()+
     #geom_jitter()+
-    theme_classic()
-  #facet_wrap(~Water)
-  facet_grid(~Water) 
+    theme_classic()+
+    facet_grid(~Water) 
+  
+  
   
   
 #biomass by competition
@@ -158,6 +175,6 @@ ggplot(traits_cv, aes(x = traits, y = cv, col=Population)) + #col=water
     #geom_jitter()+
   theme_classic()+
   #facet_wrap(~Water)
-  scale_col_manual(name = "", values = c("#b33000", "#ff4500",  "#ED7D31", "#5B9BD5"))
+  scale_color_manual(name = "", values = c("#b33000", "#ff4500",  "#ED7D31", "#5B9BD5", "#FF5733", "#70A62F"))
 
 
