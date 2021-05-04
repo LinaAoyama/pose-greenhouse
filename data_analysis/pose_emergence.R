@@ -60,17 +60,21 @@ ggplot(stems, aes(x = Competition, y = POSE_survival_stem_counts)) + #x=Water, c
 #logRespRatio(observations = POSE_survival_stem_counts, phase = Water, base_level = "Dry", conf_level = 0.95,
 #             bias_correct = TRUE, exponentiate = FALSE))
 
-#lm(Y~X) once for NONE and once for BRTE
+#lm(Y~X) once for NONE
 lm_out <- lm(POSE_survival_stem_counts ~ Water,data=stems %>%filter(Competition == "None"))
+beta_0 <- coef(lm_out)[1] 
+beta_1 <- coef(lm_out)[2] 
+# water canyon object log response ratio:
+lrr_None <- log(beta_0 + beta_1) - log(beta_0)
+#lm(Y~X) once for 
+lm_out <- lm(POSE_survival_stem_counts ~ Water,data=stems %>%filter(Competition == "BRTE"))
 
 beta_0 <- coef(lm_out)[1] 
 beta_1 <- coef(lm_out)[2] 
-
 # water canyon object log response ratio:
-lrr_WC_None <- log(beta_0 + beta_1) - log(beta_0)
-
-#reload csv to plot combined log rr. 
-#cbind(two objects)
+lrr_BRTE <- log(beta_0 + beta_1) - log(beta_0)
+#combine objects of BRTE/NONE log rr
+cbind(lrr_None, lrr_BRTE)
 
 #can you think of other kinds of plots?
 
@@ -162,19 +166,19 @@ ggplot(leafarea, aes(x = Competition, y = Height_cm)) + #x=Water, col=Water
  traits_cv<-leafarea %>%
   filter(!is.na(Dry_Biomass_Weight_g), !is.na(SLA), !is.na(LDMC), !is.na(Height_cm))%>%
   group_by(Population) %>%
-  summarise(cv_dry_biomass_weight=sd(Dry_Biomass_Weight_g)/mean(Dry_Biomass_Weight_g)*100,
-            cv_SLA=sd(SLA)/mean(SLA)*100,
-            cv_LDMC=sd(LDMC)/mean(LDMC)*100,
-            cv_height=sd(Height_cm)/mean(Height_cm)*100)%>%
+  summarise(dry_biomass_weight=sd(Dry_Biomass_Weight_g)/mean(Dry_Biomass_Weight_g)*100,
+            SLA=sd(SLA)/mean(SLA)*100,
+            LDMC=sd(LDMC)/mean(LDMC)*100,
+            height=sd(Height_cm)/mean(Height_cm)*100)%>%
   gather(key="traits", value="cv",-Population)
   
   #plot ## This runs error "couldnt find function "scale_col_manual""?
 ggplot(traits_cv, aes(x = traits, y = cv, col=Population)) + #col=water
     #geom_boxplot()+
-  geom_point()+
-    #geom_jitter()+
+  geom_point(size=4)+
+  #geom_jitter(position = "jitter")+
   theme_classic()+
   #facet_wrap(~Water)
-  scale_color_manual(name = "", values = c("#b33000", "#ff4500",  "#ED7D31", "#5B9BD5", "#FF5733", "#70A62F"))
-
-
+  scale_color_manual(name = "", values = c("#634071", "#303472",  "#395c45", "#7c7948", "#7d5039", "#6f2a2d"))
+##b33000", "#ff4500",  "#ED7D31", "#5B9BD5", "#FF5733", "#70A62F"
+##brown:844d36", "dark grey:#474853",  "light blue;#86b3d1", "light grey:#aaa0a0", "tan:#8e8268", "green:#425a07
