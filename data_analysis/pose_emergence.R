@@ -60,23 +60,26 @@ ggplot(stems, aes(x = Competition, y = POSE_survival_stem_counts)) + #x=Water, c
 #logRespRatio(observations = POSE_survival_stem_counts, phase = Water, base_level = "Dry", conf_level = 0.95,
 #             bias_correct = TRUE, exponentiate = FALSE))
 
-#lm(Y~X) once for NONE
+#lm(Y~X)  for NONE
 lm_out <- lm(POSE_survival_stem_counts ~ Water,data=stems %>%filter(Competition == "None"))
 beta_0 <- coef(lm_out)[1] 
 beta_1 <- coef(lm_out)[2] 
-# water canyon object log response ratio:
+#NONE object log response ratio:
 lrr_None <- log(beta_0 + beta_1) - log(beta_0)
-#lm(Y~X) once for 
-lm_out <- lm(POSE_survival_stem_counts ~ Water,data=stems %>%filter(Competition == "BRTE"))
 
+#lm(Y~X) for BRTE
+lm_out <- lm(POSE_survival_stem_counts ~ Water,data=stems %>%filter(Competition == "BRTE"))
 beta_0 <- coef(lm_out)[1] 
 beta_1 <- coef(lm_out)[2] 
-# water canyon object log response ratio:
+#BRTE object log response ratio:
 lrr_BRTE <- log(beta_0 + beta_1) - log(beta_0)
+
 #combine objects of BRTE/NONE log rr
 cbind(lrr_None, lrr_BRTE)
 
-#can you think of other kinds of plots?
+logresponseratio <-cbind(lrr_None, lrr_BRTE)
+
+#plot
 
 #formula to calculate standard error
 calcSE<-function(x){
@@ -175,9 +178,10 @@ ggplot(leafarea, aes(x = Competition, y = Height_cm)) + #x=Water, col=Water
   #plot ## This runs error "couldnt find function "scale_col_manual""?
 ggplot(traits_cv, aes(x = traits, y = cv, col=Population)) + #col=water
     #geom_boxplot()+
-  geom_point(size=4)+
+  geom_point(size=2)+
   #geom_jitter(position = "jitter")+
-  theme_classic()+
+  theme(axis.text.x = element_text(angle = -45, hjust = 0, vjust = 0))+ #rotate x axis labels
+  #theme_classic()+
   #facet_wrap(~Water)
   scale_color_manual(name = "", values = c("#634071", "#303472",  "#395c45", "#7c7948", "#7d5039", "#6f2a2d"))
 ##b33000", "#ff4500",  "#ED7D31", "#5B9BD5", "#FF5733", "#70A62F"
