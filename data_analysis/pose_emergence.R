@@ -125,15 +125,16 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
 #
   ggplot(leafarea, aes(x = Population, y = Dry_Biomass_Weight_g, fill=Competition)) + #col=water ##OR fill = Water##
     geom_boxplot()+
+    theme(axis.text.x = element_text(angle = -45, hjust = 0, vjust = 0))+ #rotate x axis labels
     #geom_point()+
     #geom_jitter()+
-    theme_classic()+
+    #theme_classic()+
     facet_grid(~Water) 
   
   
   
   
-#biomass by competition
+#biomass by competition -- this is hard to interpret...
 ggplot(leafarea, aes(x = Competition, y = Dry_Biomass_Weight_g)) + #x=Water, col=Water
   geom_boxplot()+
   geom_jitter()+
