@@ -10,23 +10,44 @@ source("data_compiling/compile_demography.R")
 stems <- left_join(stemcount_dat, potID) #combine potID and stemcount data in one dataframe
 leafarea<-left_join(leaftraits,potID)%>% left_join(.,biomass)%>% left_join(.,height)%>%
   mutate(SLA=FreshLeafArea_cm2/DryLeafWeight_g,LDMC=DryLeafWeight_g/FreshLeafWeight_g)
-summarizeleaf<-leafarea%>%group_by(Population, Species)%>%summarise(meanheight=mean(Height_cm),seHeight=calcSE(Height_cm),meanSLA=mean(SLA),seSLA=calcSE(SLA),meanLDMC=mean(LDMC),seLDMC=calcSE(LDMC),meanDryBiomassWeight=mean(Dry_Biomass_Weight_g),seDryBiomassWeight=calcSE(Dry_Biomass_Weight_g))
-summarizeseeds<-seeds%>%group_by(Population,Species)%>%summarise(meanseed=mean(Weight_g),seseed=calcSE(Weight_g))
+
+summarizeleaf<-leafarea%>%group_by(Population, Species)%>%filter(!is.na(Dry_Biomass_Weight_g), !is.na(SLA), !is.na(LDMC), !is.na(Height_cm))%>%summarise(meanheight=mean(Height_cm),seHeight=calcSE(Height_cm),meanSLA=mean(SLA),seSLA=calcSE(SLA),meanLDMC=mean(LDMC),seLDMC=calcSE(LDMC),meanDryBiomassWeight=mean(Dry_Biomass_Weight_g),seDryBiomassWeight=calcSE(Dry_Biomass_Weight_g))
+summarizeseeds<-seeds%>%group_by(Population,Species)%>%filter(!is.na(Weight_g))%>%summarise(meanseed=mean(Weight_g),seseed=calcSE(Weight_g))
 alltraits<-left_join(summarizeleaf,summarizeseeds)
 
 
 ##Visualize data
 #scatter plots hypothesis #2 difference in traits by population
-#POSE_emergence_stem_counts
-##  geom_point()+
-  geom_errorbar(aes(ymin=meanheight-se,ymax=meanheight+se))+
+#Height
+A_Height<- ggplot(summarizeleaf, aes(x = Population, y = meanheight)) + 
+  geom_errorbar(aes(ymin=meanheight-seHeight,ymax=meanheight+seHeight))+
   #geom_jitter()+
   theme_classic()
-  facet_wrap(~Water),
-b.<-
+
+#DryBiomassWeight
+B_DryBiomassWeight<- ggplot(summarizeleaf, aes(x = Population, y = meanDryBiomassWeight)) + 
+  geom_errorbar(aes(ymin=meanDryBiomassWeight-seDryBiomassWeight,ymax=meanDryBiomassWeight+seDryBiomassWeight))+
+  #geom_jitter()+
+  theme_classic()
+#LDMC
+C_LDMC<- ggplot(summarizeleaf, aes(x = Population, y = meanLDMC)) + 
+  geom_errorbar(aes(ymin=meanLDMC-seLDMC,ymax=meanLDMC+seLDMC))+
+  #geom_jitter()+
+  theme_classic()
+#SLA
+D_SLA<- ggplot(summarizeleaf, aes(x = Population, y = meanSLA)) + 
+  geom_errorbar(aes(ymin=meanSLA-seSLA,ymax=meanSLA+seSLA))+
+  #geom_jitter()+
+  theme_classic()
+#Seeds
+E_Seeds<- ggplot(summarizeseeds, aes(x = Population, y = meanseed)) + 
+  geom_errorbar(aes(ymin=meanseed-seseed,ymax=meanseed+seseed))+
+  #geom_jitter()+
+  theme_classic()
    
+install.packages("ggpubr")
   library(ggpubr)
-ggarrange(a.,b.c, ncol=2 nrow=3, labels=c("a","b"))
+ggarrange(A_Height, B_DryBiomassWeight, C_LDMC, D_SLA, E_Seeds, ncol=2, nrow=3, labels=c("Height","DryBiomassWeight","LDMC","SLA", "SeedWeight"))
   
 #POSE_survival_stem_counts **changed col = water TO: col = Water**
 ggplot(stems, aes(x = Water, y = POSE_survival_stem_counts)) + #x=Water, col=Water
