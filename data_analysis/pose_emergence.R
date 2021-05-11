@@ -10,17 +10,24 @@ source("data_compiling/compile_demography.R")
 stems <- left_join(stemcount_dat, potID) #combine potID and stemcount data in one dataframe
 leafarea<-left_join(leaftraits,potID)%>% left_join(.,biomass)%>% left_join(.,height)%>%
   mutate(SLA=FreshLeafArea_cm2/DryLeafWeight_g,LDMC=DryLeafWeight_g/FreshLeafWeight_g)
+summarizeleaf<-leafarea%>%group_by(Population, Species)%>%summarise(meanheight=mean(Height_cm),seHeight=calcSE(Height_cm),meanSLA=mean(SLA),seSLA=calcSE(SLA),meanLDMC=mean(LDMC),seLDMC=calcSE(LDMC),meanDryBiomassWeight=mean(Dry_Biomass_Weight_g),seDryBiomassWeight=calcSE(Dry_Biomass_Weight_g))
+summarizeseeds<-seeds%>%group_by(Population,Species)%>%summarise(meanseed=mean(Weight_g),seseed=calcSE(Weight_g))
+alltraits<-left_join(summarizeleaf,summarizeseeds)
 
 
 ##Visualize data
-#scatter plots 
+#scatter plots hypothesis #2 difference in traits by population
 #POSE_emergence_stem_counts
-ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts)) +
-  geom_point()+
-  geom_jitter()+
+##  geom_point()+
+  geom_errorbar(aes(ymin=meanheight-se,ymax=meanheight+se))+
+  #geom_jitter()+
   theme_classic()
-  facet_wrap(~Water)
-
+  facet_wrap(~Water),
+b.<-
+   
+  library(ggpubr)
+ggarrange(a.,b.c, ncol=2 nrow=3, labels=c("a","b"))
+  
 #POSE_survival_stem_counts **changed col = water TO: col = Water**
 ggplot(stems, aes(x = Water, y = POSE_survival_stem_counts)) + #x=Water, col=Water
   geom_point()+
@@ -118,8 +125,23 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
   theme_classic()
   #facet_wrap(~Water)
   facet_grid(~Water) #how do I make the boxplot separate by wet/dry? this doesn't seem to work...
-  
 
+  ##figure 2 with facets as dry wet, with competition
+  ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Competition)) + #col=water ##OR fill = Water##
+    geom_boxplot()+
+    theme(axis.text.x = element_text(angle = -45, hjust = 0, vjust = 0))+ #rotate x axis labels
+    #geom_point()+
+    #geom_jitter()+
+    #theme_classic()+
+    facet_grid(~Water) 
+  
+  ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) + #col=water ##OR fill = Water##
+    geom_boxplot()+
+    theme(axis.text.x = element_text(angle = -45, hjust = 0, vjust = 0))+ #rotate x axis labels
+    #geom_point()+
+    #geom_jitter()+
+    #theme_classic()+
+    facet_grid(~Competition) 
 #
 #y=biomass, x = populations ## this one with wet/dry/competition by using facet_Grid
 #
@@ -131,6 +153,13 @@ ggplot(stems, aes(x = Population, y = POSE_emergence_stem_counts, fill=Water)) +
     #theme_classic()+
     facet_grid(~Water) 
   
+  ggplot(leafarea, aes(x = Population, y = Dry_Biomass_Weight_g, fill=Water)) + #col=water ##OR fill = Water##
+    geom_boxplot()+
+    theme(axis.text.x = element_text(angle = -45, hjust = 0, vjust = 0))+ #rotate x axis labels
+    #geom_point()+
+    #geom_jitter()+
+    #theme_classic()+
+    facet_grid(~Competition) 
   
   
   
@@ -145,6 +174,7 @@ ggplot(leafarea, aes(x = Competition, y = Dry_Biomass_Weight_g)) + #x=Water, col
 #seed weight #this needs work...
   ggplot(seeds, aes(x = Population, y = Weight_g))+
     geom_boxplot()+
+    theme(axis.text.x = element_text(angle = -45, hjust = 0, vjust = 0))
     #geom_point()+
     geom_jitter()+
     theme_classic()
@@ -166,6 +196,9 @@ ggplot(leafarea, aes(x = Competition, y = Height_cm)) + #x=Water, col=Water
   #facet_grid(~Population)
   facet_grid(vars(Water), vars(Population)) #added population/competition
   
+#sla, height, seed mass, ldmc
+
+
 #figure 4 plasticity coefficient of variation--- traits from leafarea object:  SLA, LDMC
  traits_cv<-leafarea %>%
   filter(!is.na(Dry_Biomass_Weight_g), !is.na(SLA), !is.na(LDMC), !is.na(Height_cm))%>%
@@ -179,11 +212,12 @@ ggplot(leafarea, aes(x = Competition, y = Height_cm)) + #x=Water, col=Water
   #plot ## This runs error "couldnt find function "scale_col_manual""?
 ggplot(traits_cv, aes(x = traits, y = cv, col=Population)) + #col=water
     #geom_boxplot()+
-  geom_point(size=2)+
-  #geom_jitter(position = "jitter")+
+  #geom_point(size=2)+
+  geom_jitter()+
   theme(axis.text.x = element_text(angle = -45, hjust = 0, vjust = 0))+ #rotate x axis labels
-  #theme_classic()+
+ # theme_classic()
   #facet_wrap(~Water)
-  scale_color_manual(name = "", values = c("#634071", "#303472",  "#395c45", "#7c7948", "#7d5039", "#6f2a2d"))
+ scale_color_manual(name = "", values = c("#ff1f5b", "#00cd6c", "#009ade", "#af58ba", "#ffc61e", "#f28522"))
 ##b33000", "#ff4500",  "#ED7D31", "#5B9BD5", "#FF5733", "#70A62F"
+###634071", "#303472",  "#395c45", "#7c7948", "#7d5039", "#6f2a2d
 ##brown:844d36", "dark grey:#474853",  "light blue;#86b3d1", "light grey:#aaa0a0", "tan:#8e8268", "green:#425a07
