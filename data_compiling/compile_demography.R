@@ -6,4 +6,5 @@ leaftraits <- read_csv(paste(datpath,"/Greenhouse_leaf_traits.csv", sep="")) #se
 biomass <- read_csv(paste(datpath,"/Greenhouse_aboveground_biomass.csv", sep="")) #aboveground BRTE and POSE dry weight
 height <- read_csv(paste(datpath,"/Greenhouse_height.csv", sep="")) #seedling height
 root <- read_csv(paste(datpath,"/Greenhouse_roots.csv", sep = "")) #seedling root length, avg diameter, etc.
+rootbiomass <- read_csv(paste(datpath, "/Greenhouse_belowground_biomass.csv", sep = "")) #belowground root POSE dry weight  
 #seeds<- read_csv(paste(datpath,"/Greenhouse_POSE_seed_weight.csv", sep=""))

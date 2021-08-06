@@ -30,6 +30,9 @@ se <- function(x){
 # 1. Are adult POSE better at resisting BRTE than seedling POSE?
 
 # Adult vs seedling POSE - adult POSE are better than seedling POSE at limiting BRTE growth but not germination
+summary(aov(BRTE~Life_stage, data = biomass_dat %>% filter(Competition == "BRTE")))
+summary(aov(BRTE_stem_count~Life_stage, data = demography %>% filter(Competition == "BRTE")))
+
 fig_biomass <- ggplot(biomass_dat %>% filter(Competition == "BRTE"), aes(y = BRTE, x = Life_stage)) +
                     geom_boxplot()+
                     theme(text = element_text(size=20),
@@ -40,7 +43,9 @@ fig_biomass <- ggplot(biomass_dat %>% filter(Competition == "BRTE"), aes(y = BRT
                           legend.position = "none", 
                           axis.title = element_text(size = 18),
                           axis.title.x = element_blank())+
-                    ylab(bquote(italic(B.tectorum)~Biomass~(g)))
+                    ylab(bquote(italic(B.tectorum)~Biomass~(g)))+
+                    annotate("text", label = c("***"), y = 0.55, x = 1.5, size = 18)
+
 fig_counts <- ggplot(demography %>% filter(Competition == "BRTE"), aes(y = BRTE_stem_count/50, x = Life_stage))+
                   geom_boxplot()+
                   theme(text = element_text(size=20),
@@ -51,7 +56,9 @@ fig_counts <- ggplot(demography %>% filter(Competition == "BRTE"), aes(y = BRTE_
                         legend.position = "none", 
                         axis.title = element_text(size = 18),
                         axis.title.x = element_blank())+
-                  ylab(bquote(italic(B.tectorum)~Germination~Rate))
+                  ylab(bquote(italic(B.tectorum)~Germination~Rate))+
+                  annotate("text", label = c("NA"), y = 0.95, x = 1.5, size = 10)
+
 ggarrange( fig_biomass, fig_counts, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
            font.label = list(size = 18))
 
@@ -111,11 +118,12 @@ fig_establish <- ggplot(summary_seedling, aes(x = Population, y = mean, col = Co
                         panel.grid.minor = element_blank(),
                         panel.background = element_blank(),
                         axis.line = element_line(colour = "black"),
-                        legend.position = c(0.8, 0.9), 
+                        legend.position = c(0.8, 0.8), 
                         axis.title = element_text(size = 15))+
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-                  ylab(bquote(italic(P.secunda)~Survival~Rate))
+                  ylab(bquote(italic(P.~secunda)~Survival~Rate)) +
+                  annotate("text", label = c("A", "B", "B", "C", "B", "B"), y = 0.6, x = c(1, 2, 3, 4, 5, 6))
 
 # Stats for POSE survival rate by pop
 TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%
@@ -139,8 +147,8 @@ TukeyHSD(aov(BRTE~Population, data = biomass_dat%>%
               filter(Life_stage == "seedling")%>%filter(Water == "Wet")%>%filter(Competition == "BRTE")))
 
 # Graph them together
-ggarrange(fig_density, fig_establish, fig_brte, ncol = 1, nrow = 3, labels = c("(a)", "(b)", "(c)"),
-           font.label = list(size = 15), legend = "top", heights = c(1.5, 2, 2))
+ggarrange(fig_density, fig_establish, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
+           font.label = list(size = 15), legend = "top", heights = c(1.5, 2))
 
 #-----------------------------------------------------------#
 # 3. Does POSE's resistance to BRTE change by water availability?
@@ -187,11 +195,12 @@ fig_LRR <- ggplot(LRR_seedlings, aes(x = Population, y = Est, col = Water))+
                       panel.grid.minor = element_blank(),
                       panel.background = element_blank(),
                       axis.line = element_line(colour = "black"),
-                      legend.position = c(.2,0.9), 
+                      legend.position = "top", 
                       axis.title = element_text(size = 15))+
                 ylab(bquote(italic(P.secunda)~LRR~Survival~Rate))+
                 geom_hline(yintercept = 0, linetype = "dashed")+
-                scale_color_manual(name = "Water Treatment", values = c( "#E69F00", "#999999"))
+                scale_color_manual(name = "Water Treatment", values = c( "#E69F00", "#999999"))+
+                annotate("text", label = c("*", "***", "*"), x = c(2, 5, 6), y = 1.1, size = 10)
 
 # BRTE biomass by population and water availability 
 fig_brte_water <- ggplot(summary_BRTE, aes(x = Population, y = mean, col = Water))+
