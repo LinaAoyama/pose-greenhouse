@@ -96,16 +96,18 @@ f_AG_trait <-ggplot(mean_trait_long%>%filter(Treatment == "None-Wet")%>%filter(t
                 geom_point()+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
-                theme_bw()
+                theme_bw()+
+                ylab("")
 f_BG_trait <-ggplot(mean_trait_long%>%filter(Treatment == "None-Wet")%>%filter(!(trait%in%c("Days_emergence", "Height", "SLA", "LDMC"))), aes(x = Population, y = mean)) +
                 geom_point()+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
-                theme_bw()
+                theme_bw()+
+                ylab("")
 
 # Graph them together
 ggarrange(f_AG_trait, f_BG_trait, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right")
+          font.label = list(size = 15), common.legend = TRUE, legend = "right", heights = c(1, 2.5))
 TukeyHSD(aov(value~Population, data = trait_long%>%
                filter(Treatment == "None-Wet")%>%
                filter(trait == "SLA")))

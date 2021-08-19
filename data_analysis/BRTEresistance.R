@@ -15,10 +15,11 @@ library(nlme) #linear mixed effects
 library(multcomp) #tukey
 
 # Prep data
-growth <- inner_join(potID, stemcount)
-ramets <- inner_join(potID, rametcount)
-demography <- full_join(growth, ramets)
+growth <- inner_join(potID, stemcount) %>% filter(Population != "Gund")
+ramets <- inner_join(potID, rametcount) %>% filter(Population != "Gund")
+demography <- full_join(growth, ramets) %>% filter(Population != "Gund")
 biomass_dat <- inner_join(potID, biomass) %>%
+  filter(Population != "Gund") %>%
   pivot_wider(names_from = Species, values_from = Dry_Biomass_Weight_g)
 
 # Function for standard error
@@ -63,56 +64,32 @@ ggarrange( fig_biomass, fig_counts, ncol = 2, nrow = 1, labels = c("(a)", "(b)")
            font.label = list(size = 18))
 
 #-----------------------------------------------------------#
-# 2. Are there any differences in survival rates of seedling POSE by population?
+# 2. Are there any differences in BRTE resistance of seedling POSE by population?
 
 # Reorder the populations by wet to dry sites
-growth$Population <- ordered(as.factor(growth$Population), levels = c("Butte Valley","Steens","EOARC", "Gund",
+growth$Population <- ordered(as.factor(growth$Population), levels = c("Butte Valley","Steens","EOARC", 
                                                                       "Water Canyon",  "Reno"))
-biomass_dat$Population <- ordered(as.factor(biomass_dat$Population), levels = c("Butte Valley","Steens","EOARC", "Gund",
+growth$Water <- ordered(as.factor(growth$Water), levels = c("Wet", "Dry"))
+biomass_dat$Population <- ordered(as.factor(biomass_dat$Population), levels = c("Butte Valley","Steens","EOARC", 
                                                                       "Water Canyon",  "Reno"))
-# Calculate mean POSE stem counts by population
-mu <- growth %>%
-  filter(Water == "Wet") %>%
-  group_by(Population, Competition) %>%
-  summarise(mean = mean(POSE_survival_stem_count, na.rm = TRUE))
-
+biomass_dat$Water <- ordered(as.factor(biomass_dat$Water), levels = c("Wet", "Dry"))
 # Calculate survival rates
 summary_seedling <- growth %>%
-  drop_na()%>%
-  filter(Water == "Wet") %>%
-  group_by(Population, Competition) %>%
+  group_by(Population, Competition, Water) %>%
   summarise(mean = mean(POSE_survival_stem_count/25),
               se = se(POSE_survival_stem_count/25))
 
-# Calculate mean BRTE biomass
-summary_BRTE <- biomass_dat %>%
-  drop_na()%>%
-  filter(Competition == "BRTE")%>%
+# Calculate mean biomass
+summary_biomass <- biomass_dat %>%
   filter(Life_stage == "seedling") %>%
-  group_by(Population, Water) %>%
-  summarise(mean = mean(BRTE),
-            se = se(BRTE))
+  select(PotID, Population, Competition, Water, POSE) %>%
+  drop_na()%>%
+  group_by(Population, Competition, Water) %>%
+  summarise(mean = mean(POSE), se = se(POSE))
   
-# Distribution of POSE seedling counts by population and BRTE competition - EOARC, Steens, and Water Canyon resisted BRTE
-fig_density <- ggplot(growth%>%filter(Water == "Wet"), aes(x = POSE_survival_stem_count, fill = Competition)) +
-                    geom_density(alpha = 0.2) +
-                    theme_bw(base_size = 15)+
-                    facet_grid(~Population)+
-                    #geom_histogram(aes(y=..density..), alpha = 0.4, position = "identity")+
-                    ylab(bquote(Density))+
-                    xlab(bquote(italic(P.secunda)~stem~count))+
-                    geom_vline(data = mu, aes(xintercept = mean, color = Competition))
-
-# ggplot(growth%>%filter(Water == "Wet"), aes(x = POSE_survival_stem_count/25, fill = Competition)) +
-#   geom_density(alpha = 0.2) +
-#   theme_bw(base_size = 15)+
-#   facet_grid(~Population)+
-#   #geom_histogram(aes(y=..density..), alpha = 0.4, position = "identity")+
-#   ylab(bquote(Density))+
-#   xlab(bquote(italic(P.secunda)~Establishment~Rate))
-
-# seeding POSE survival rate by population - EOARC, Gund, Water Canyon, and Reno more resistant to BRTE than Butte Valley and Steens
+# seedling POSE survival rate by population 
 fig_establish <- ggplot(summary_seedling, aes(x = Population, y = mean, col = Competition)) +
+                  facet_grid(~Water)+
                   theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
                         panel.grid.minor = element_blank(),
@@ -122,33 +99,85 @@ fig_establish <- ggplot(summary_seedling, aes(x = Population, y = mean, col = Co
                         axis.title = element_text(size = 15))+
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-                  ylab(bquote(italic(P.~secunda)~Survival~Rate)) +
-                  annotate("text", label = c("A", "B", "B", "C", "B", "B"), y = 0.6, x = c(1, 2, 3, 4, 5, 6))
+                  ylab(bquote(italic(P.~secunda)~Establishment~Rate)) 
 
 # Stats for POSE survival rate by pop
 TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%
               filter(Water == "Wet")))
-
+TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%
+               filter(Water == "Dry")))
 # Check stats for Butte Valley and Steens -- difference between BRTE and None not statistically significant
 TukeyHSD(aov(POSE_survival_stem_count ~ Competition, data = growth%>%filter(Water == "Wet")%>%
                filter(Population == "Steens")))
 TukeyHSD(aov(POSE_survival_stem_count ~ Competition, data = growth%>%filter(Water == "Wet")%>%
                filter(Population == "Butte Valley")))
 
-# BRTE biomass by population 
-fig_brte <- ggplot(summary_BRTE%>%filter(Water == "Wet"), aes(x = Population, y = mean))+
-  geom_point() +
-  theme_classic(base_size = 15) +
-  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2)+
-  ylab(bquote(italic(B.tectorum)~Biomass~(g)))
 
-# Stats for BRTE biomass by pop
-TukeyHSD(aov(BRTE~Population, data = biomass_dat%>%
-              filter(Life_stage == "seedling")%>%filter(Water == "Wet")%>%filter(Competition == "BRTE")))
+# seedling POSE biomass by population
+fig_biomass <- ggplot(summary_biomass, aes(x = Population, y = mean, col = Competition)) +
+                  facet_grid(~Water)+
+                  theme(text = element_text(size=15),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        axis.line = element_line(colour = "black"),
+                        legend.position = c(0.8, 0.6), 
+                        axis.title = element_text(size = 15))+
+                  geom_point(position = position_dodge(width = 0.5))+
+                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+                  scale_y_log10()+
+                  ylab(bquote(italic(P.~secunda)~Biomass~(g))) 
+
 
 # Graph them together
-ggarrange(fig_density, fig_establish, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
-           font.label = list(size = 15), legend = "top", heights = c(1.5, 2))
+ggarrange( fig_establish, fig_biomass, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
+           font.label = list(size = 15), legend = "top")
+
+
+# Distribution of POSE seedling counts by population and BRTE competition - EOARC, Steens, and Water Canyon resisted BRTE
+# # Calculate mean POSE stem counts by population
+# mu <- growth %>%
+#   group_by(Population, Competition, Water) %>%
+#   summarise(mean = mean(POSE_survival_stem_count, na.rm = TRUE))
+# ggplot(growth%>%filter(Water == "Wet"), aes(x = POSE_survival_stem_count, fill = Competition)) +
+#                     geom_density(alpha = 0.2) +
+#                     theme_bw(base_size = 15)+
+#                     facet_grid(~Population)+
+#                     #geom_histogram(aes(y=..density..), alpha = 0.4, position = "identity")+
+#                     ylab(bquote(Density))+
+#                     xlab(bquote(italic(P.secunda)~stem~count))+
+#                     geom_vline(data = mu, aes(xintercept = mean, color = Competition))
+
+# ggplot(growth%>%filter(Water == "Wet"), aes(x = POSE_survival_stem_count/25, fill = Competition)) +
+#   geom_density(alpha = 0.2) +
+#   theme_bw(base_size = 15)+
+#   facet_grid(~Population)+
+#   #geom_histogram(aes(y=..density..), alpha = 0.4, position = "identity")+
+#   ylab(bquote(Density))+
+#   xlab(bquote(italic(P.secunda)~Establishment~Rate))
+
+
+#BRTE biomass as metric of BRTE resistance?
+# 
+# # Calculate mean BRTE biomass
+# summary_BRTE <- biomass_dat %>%
+#   drop_na()%>%
+#   filter(Competition == "BRTE")%>%
+#   filter(Life_stage == "seedling") %>%
+#   group_by(Population, Water) %>%
+#   summarise(mean = mean(BRTE),
+#             se = se(BRTE))
+# 
+# # BRTE biomass by population 
+# fig_brte <- ggplot(summary_BRTE%>%filter(Water == "Wet"), aes(x = Population, y = mean))+
+#   geom_point() +
+#   theme_classic(base_size = 15) +
+#   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2)+
+#   ylab(bquote(italic(B.tectorum)~Biomass~(g)))
+# 
+# # Stats for BRTE biomass by pop
+# TukeyHSD(aov(BRTE~Population, data = biomass_dat%>%
+#               filter(Life_stage == "seedling")%>%filter(Water == "Wet")%>%filter(Competition == "BRTE")))
 
 #-----------------------------------------------------------#
 # 3. Does POSE's resistance to BRTE change by water availability?
