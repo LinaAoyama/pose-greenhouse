@@ -52,6 +52,12 @@ trait_master <- inner_join(potID, root_traits)%>%
 
 trait_matrix <- as.matrix(trait_master[,7:ncol(trait_master)]) #extract only the trait value columns
 
+growth <- inner_join(potID, stemcount) %>% filter(Population != "Gund")
+
+biomass_dat <- inner_join(potID, biomass) %>%
+  filter(Population != "Gund") %>%
+  pivot_wider(names_from = Species, values_from = Dry_Biomass_Weight_g)
+
 # Function for standard error
 se <- function(x){
   sd(x)/sqrt(length(x))# this is a function for calculating standard error
@@ -123,7 +129,7 @@ AG_pca_trait_scores = as.data.frame(scores(AG_pca_trait, choices=c(1,2), display
 AG_pca_trait_scores_lab = as.data.frame(cbind(trait_master[,1:6],AG_pca_trait_scores)) 
 AG_pca_trait_scores_lab$Population <- ordered(as.factor(AG_nmds_trait_scores_lab$Population), levels = c("Butte Valley","Steens","EOARC",
                                                                                                           "Water Canyon",  "Reno"))
-AG_pca_trait_scores_lab$Treatment <- apply(AG_pca_trait_scores_lab[ ,3:4 ] , 1 , paste , collapse = "-" )
+AG_pca_trait_scores_lab$Treatment <- apply(AG_pca_trait_scores_lab[ ,3:4 ] , 1 , paste , collapse = "_" )
 summary(AG_pca_trait)
 AG_en = as.data.frame(scores(AG_pca_trait, choices=c(1,2), display=c("species")))
 f_AG_pca <- ggplot(AG_pca_trait_scores_lab, aes(x = PC1, y = PC2)) + #plot pca in ggplot2
@@ -153,7 +159,7 @@ BG_pca_trait_scores = as.data.frame(scores(BG_pca_trait, choices = c(1,2), displ
 BG_pca_trait_scores_lab = as.data.frame(cbind(trait_master[,1:6],BG_pca_trait_scores)) 
 BG_pca_trait_scores_lab$Population <- ordered(as.factor(BG_pca_trait_scores_lab$Population), levels = c("Butte Valley","Steens","EOARC", 
                                                                                                           "Water Canyon",  "Reno"))
-BG_pca_trait_scores_lab$Treatment <- apply(BG_pca_trait_scores_lab[ ,3:4 ] , 1 , paste , collapse = "-" )
+BG_pca_trait_scores_lab$Treatment <- apply(BG_pca_trait_scores_lab[ ,3:4 ] , 1 , paste , collapse = "_" )
 summary(BG_pca_trait)
 BG_en = as.data.frame(scores(BG_pca_trait, choices=c(1,2), display=c("species")))
 f_BG_pca <- ggplot(BG_pca_trait_scores_lab, aes(x = PC1, y = PC2)) + #plot pca in ggplot2
@@ -181,7 +187,96 @@ f_BG_pca <- ggplot(BG_pca_trait_scores_lab, aes(x = PC1, y = PC2)) + #plot pca i
 ggarrange(f_AG_pca, f_BG_pca, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
           font.label = list(size = 15), common.legend = TRUE, legend = "right")
 
+#----------------------------------------------------------#
+# Is trait plasticity correlated with BRTE resistance?
 
+# Calculate PCA score distance as a metric of plasticity
+AG_plasticity <- AG_pca_trait_scores_lab %>%
+  select(Population, Replicate, Competition, Water, PC1, PC2) %>%
+  pivot_wider(names_from = Competition, values_from = c(PC1, PC2)) %>%
+  group_by(Population, Replicate, Water) %>%
+  na.omit()%>%
+  summarise(d_AG = sqrt((PC1_BRTE-PC1_None)^2 + (PC2_BRTE- PC2_None)^2))
+
+BG_plasticity <- BG_pca_trait_scores_lab %>%
+  select(Population, Replicate, Competition, Water, PC1, PC2) %>%
+  pivot_wider(names_from = Competition, values_from = c(PC1, PC2)) %>%
+  group_by(Population, Replicate, Water) %>%
+  na.omit()%>%
+  summarise(d_BG = sqrt((PC1_BRTE-PC1_None)^2 + (PC2_BRTE- PC2_None)^2))
+
+# Calculate BRTE resistance: survival rate BRTE - None and biomass BRTE - None
+survival_delta <- growth %>%
+  select(Population, Replicate, Water, Competition, POSE_survival_stem_count) %>%
+  mutate(survivalrate = POSE_survival_stem_count/25) %>%
+  select(Population, Replicate, Water, Competition, survivalrate) %>%
+  pivot_wider(names_from = Competition, values_from = survivalrate) %>%
+  group_by(Population, Replicate, Water) %>%
+  summarise(survival_delta = BRTE-None)
+biomass_delta <- biomass_dat %>%
+  filter(Life_stage == "seedling") %>%
+  select(Population, Replicate, Water, Competition, POSE) %>%
+  pivot_wider(names_from = Competition, values_from = POSE) %>%
+  group_by(Population, Replicate, Water) %>%
+  na.omit()%>%
+  summarise(biomass_delta = BRTE-None)
+
+# Combine dataframes to plot it
+plastic_combined <- left_join(survival_delta, biomass_delta) %>%
+  left_join(., AG_plasticity) %>%
+  left_join(., BG_plasticity)
+f1 <- ggplot(plastic_combined, aes(x = d_AG, y = survival_delta)) +
+        geom_point(aes(col = Water))+
+        theme(text = element_text(size=12),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank(),
+              axis.line = element_line(colour = "black"),
+              panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+              axis.title = element_text(size = 12))+
+        ylab(bquote(italic(P.~secunda)~Survival~Rate~(BRTE-None))) +
+        xlab("Aboveground trait platicity")+
+        geom_smooth(method = "lm", colour="black", size=0.5)
+f2 <- ggplot(plastic_combined, aes(x = d_AG, y = biomass_delta)) +
+        geom_point(aes(col = Water))+
+        theme(text = element_text(size=12),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank(),
+              axis.line = element_line(colour = "black"),
+              panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+              axis.title = element_text(size = 12))+
+        ylab(bquote(italic(P.~secunda)~Biomass~(BRTE-None))) +
+        xlab("Aboveground trait platicity")+
+        geom_smooth(method = "lm", colour="black", size=0.5)
+f3 <- ggplot(plastic_combined, aes(x = d_BG, y = survival_delta)) +
+        geom_point(aes(col = Water))+
+        theme(text = element_text(size=12),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank(),
+              axis.line = element_line(colour = "black"),
+              panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+              axis.title = element_text(size = 12))+
+        ylab(bquote(italic(P.~secunda)~Survival~Rate~(BRTE-None))) +
+        xlab("Belowground trait platicity")+
+        geom_smooth(method = "lm", colour="black", size=0.5)
+f4 <- ggplot(plastic_combined, aes(x = d_BG, y = biomass_delta)) +
+        geom_point(aes(col = Water))+
+        theme(text = element_text(size=12),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank(),
+              axis.line = element_line(colour = "black"),
+              panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+              axis.title = element_text(size = 12))+
+        ylab(bquote(italic(P.~secunda)~Biomass~(BRTE-None))) +
+        xlab("Belowground trait platicity")+
+        geom_smooth(method = "lm", colour="black", size=0.5)
+
+# Graph them together
+ggarrange(f1, f2, f3, f4, ncol = 2, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)"),
+          font.label = list(size = 15), common.legend = TRUE, legend = "right")
 #----------------------------------------------------------#
 # Which trait is correlated with higher POSE survival rate?
 survival_trait <- inner_join(trait_master, stemcount) %>%
