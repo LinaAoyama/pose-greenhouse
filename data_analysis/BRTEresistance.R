@@ -70,68 +70,95 @@ ggarrange( fig_biomass, fig_counts, ncol = 2, nrow = 1, labels = c("(a)", "(b)")
 growth$Population <- ordered(as.factor(growth$Population), levels = c("Butte Valley","Steens","EOARC", 
                                                                       "Water Canyon",  "Reno"))
 growth$Water <- ordered(as.factor(growth$Water), levels = c("Wet", "Dry"))
+growth$Treatment <- apply(growth[ ,3:4 ] , 1 , paste , collapse = "-" )
 biomass_dat$Population <- ordered(as.factor(biomass_dat$Population), levels = c("Butte Valley","Steens","EOARC", 
                                                                       "Water Canyon",  "Reno"))
 biomass_dat$Water <- ordered(as.factor(biomass_dat$Water), levels = c("Wet", "Dry"))
+biomass_dat$Treatment <- apply(biomass_dat[ ,3:4 ] , 1 , paste , collapse = "-" )
 # Calculate survival rates
 summary_seedling <- growth %>%
-  group_by(Population, Competition, Water) %>%
+  group_by(Population, Treatment) %>%
   summarise(mean = mean(POSE_survival_stem_count/25),
               se = se(POSE_survival_stem_count/25))
 
 # Calculate mean biomass
 summary_biomass <- biomass_dat %>%
   filter(Life_stage == "seedling") %>%
-  select(PotID, Population, Competition, Water, POSE) %>%
+  dplyr::select(PotID, Population, Treatment, POSE) %>%
   drop_na()%>%
-  group_by(Population, Competition, Water) %>%
+  group_by(Population, Treatment) %>%
   summarise(mean = mean(POSE), se = se(POSE))
   
 # seedling POSE survival rate by population 
-fig_establish <- ggplot(summary_seedling, aes(x = Population, y = mean, col = Competition)) +
-                  facet_grid(~Water)+
+fig_establish <- ggplot(summary_seedling, aes(x = Treatment, y = mean, col = Population))+
                   theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
                         panel.grid.minor = element_blank(),
                         panel.background = element_blank(),
                         axis.line = element_line(colour = "black"),
-                        legend.position = c(0.8, 0.8), 
+                        legend.position = c(0.2, 0.8), 
                         axis.title = element_text(size = 15))+
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-                  ylab(bquote(italic(P.~secunda)~Establishment~Rate)) 
+                  ylab(bquote(italic(P.~secunda)~Establishment)) 
 
 # Stats for POSE survival rate by pop
-TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%
+summary(aov(POSE_survival_stem_count ~ Population*Competition*Water, data = growth))
+TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%filter(Competition == "None")%>%
               filter(Water == "Wet")))
-TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%
+TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%filter(Competition == "None")%>%
                filter(Water == "Dry")))
-# Check stats for Butte Valley and Steens -- difference between BRTE and None not statistically significant
-TukeyHSD(aov(POSE_survival_stem_count ~ Competition, data = growth%>%filter(Water == "Wet")%>%
-               filter(Population == "Steens")))
-TukeyHSD(aov(POSE_survival_stem_count ~ Competition, data = growth%>%filter(Water == "Wet")%>%
-               filter(Population == "Butte Valley")))
+TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%filter(Competition == "BRTE")%>%
+               filter(Water == "Wet")))
+TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%filter(Competition == "BRTE")%>%
+               filter(Water == "Dry")))
 
+# Stats for interaction of Competition and Water trts on POSE survival rate
+summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth))
+summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
+               filter(Population == "Butte Valley")))
+summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
+              filter(Population == "Steens")))
+summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
+              filter(Population == "EOARC")))
+summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
+              filter(Population == "Water Canyon")))
+summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
+              filter(Population == "Reno")))
 
 # seedling POSE biomass by population
-fig_biomass <- ggplot(summary_biomass, aes(x = Population, y = mean, col = Competition)) +
-                  facet_grid(~Water)+
-                  theme(text = element_text(size=15),
+fig_biomass <- ggplot(summary_biomass, aes(x = Treatment, y = mean, col = Population)) +
+                        theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
                         panel.grid.minor = element_blank(),
                         panel.background = element_blank(),
                         axis.line = element_line(colour = "black"),
-                        legend.position = c(0.8, 0.6), 
+                        legend.position = c(0.2, 0.8), 
                         axis.title = element_text(size = 15))+
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   scale_y_log10()+
                   ylab(bquote(italic(P.~secunda)~Biomass~(g))) 
 
+# Stats for POSE biomass by pop
+summary(aov(POSE ~ Population*Water*Competition, data = biomass_dat%>%filter(Life_stage == "seedling")))
+
+# Stats for interaction of Competition and Water on POSE biomass 
+summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling")))
+summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
+              filter(Population == "Butte Valley")))
+summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
+              filter(Population == "Steens")))
+summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
+              filter(Population == "EOARC")))
+summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
+              filter(Population == "Water Canyon")))
+summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
+              filter(Population == "Reno")))
 
 # Graph them together
 ggarrange( fig_establish, fig_biomass, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
-           font.label = list(size = 15), legend = "top")
+           font.label = list(size = 15), legend = "right", common.legend = TRUE)
 
 
 # Distribution of POSE seedling counts by population and BRTE competition - EOARC, Steens, and Water Canyon resisted BRTE

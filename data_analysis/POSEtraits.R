@@ -49,8 +49,11 @@ trait_master <- inner_join(potID, root_traits)%>%
   inner_join(., leaf_traits) %>%
   inner_join(., germination_dates) %>%
   filter(Population != "Gund")
+colnames(trait_master) <- c('PlotID', 'Life_stage', 'Competition', 'Water', 'Population', 'Replicate',
+                            'Length', 'SRL', 'SurfArea', 'AvgDiam', 'Tips', 'Forks', 'Fine', 'Coarse', 
+                            'TotalBiomass', 'RMR', 'Height', 'SLA', 'LDMC', 'Emergence')
 
-trait_matrix <- as.matrix(trait_master[,7:ncol(trait_master)]) #extract only the trait value columns
+trait_matrix_raw <- as.matrix(trait_master[,7:ncol(trait_master)]) #extract only the trait value columns
 
 growth <- inner_join(potID, stemcount) %>% filter(Population != "Gund")
 
@@ -63,34 +66,47 @@ se <- function(x){
   sd(x)/sqrt(length(x))# this is a function for calculating standard error
 } 
 
+#-----------------------------------------
+# Take out any traits that are collinear
+# Standardize the data
+pairs(~RMR + Tips + Length + Fine + Coarse + SRL + SurfArea + AvgDiam + Forks + TotalBiomass, trait_matrix_raw)
+trait_matrix <- as.data.frame(decostand(trait_matrix_raw, "standardize")) %>%
+  dplyr::select( -Fine, -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
+
+
 #----------------------------------------------------------#
-# What are the trait characteristics of each population?
+# How did the trait shift by BRTE competition and water treatment?
 # Create PCA of traits
-pca_trait = rda(trait_matrix, scale = TRUE) #run PCA on all traits
+pca_trait = rda(trait_matrix, scale = FALSE) #run PCA on all traits
 biplot(pca_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
 pca_trait_scores <- as.data.frame(scores(pca_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
 pca_trait_scores_lab = as.data.frame(cbind(trait_master[,1:6],pca_trait_scores)) #add plot info back
-pca_trait_scores_lab$Population <- ordered(as.factor(pca_trait_scores_lab$Population), levels = c("Butte Valley","Steens","EOARC", 
-                                                                                                    "Water Canyon",  "Reno"))
+pca_trait_scores_lab$Population <- ordered(as.factor(pca_trait_scores_lab$Population), levels = c("Butte Valley","Steens","EOARC",
+                                                                                                  "Water Canyon",  "Reno"))
+pca_trait_scores_lab$Treatment <- apply(pca_trait_scores_lab[ ,3:4 ] , 1 , paste , collapse = "_" )
 envout<-as.data.frame(scores(pca_trait, choices=c(1,2), display=c("species")))
+summary(pca_trait)
 ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
-  geom_point(size = 4, aes(colour = Population), alpha = 0.5)+
-  theme(text = element_text(size=15),
+  geom_point(size = 4, aes(colour = Treatment, shape = Population), alpha = 0.5)+
+  theme(text = element_text(size=18),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
         axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
         axis.title = element_text(size = 15))+
+  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
   geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
                alpha = 0.5, size = 1, colour = "grey30") +
-  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30", 
-            fontface = "bold", label = row.names(envout))+
-  xlim(-2, 2.5)
+  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+            fontface = "bold", label = row.names(envout), size = 5)+
+  xlim(-2, 2.3)
 
-# Plot spread of trait values by population
+#----------------------------------------------------------#
+# How did each trait respond to the treatment?
+# Calculate mean and standard error of each trait by population and treatment
 trait_long <- trait_master %>%
-  pivot_longer(cols = Length_cm:Days_emergence, names_to = "trait", values_to = "value")
+  pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")
 trait_long$Population <- ordered(as.factor(trait_long$Population), levels = c("Butte Valley","Steens","EOARC", 
                                                                               "Water Canyon",  "Reno"))
 trait_long$Treatment <- apply(trait_long[ ,3:4 ] , 1 , paste , collapse = "-" )
@@ -98,14 +114,14 @@ mean_trait_long <- trait_long%>%
   group_by(Population, Treatment, trait) %>%
   summarise(mean = mean(value),
             se = se(value))
-f_AG_trait <-ggplot(mean_trait_long%>%filter(Treatment == "None-Wet")%>%filter(trait%in%c("Days_emergence", "Height", "SLA", "LDMC")), aes(x = Population, y = mean)) +
-                geom_point()+
+f_AG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("Emergence", "Height", "SLA", "LDMC")), aes(x = Treatment, y = mean, col = Population)) +
+                geom_point(position = position_dodge(width = 0.5))+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
                 theme_bw()+
                 ylab("")
-f_BG_trait <-ggplot(mean_trait_long%>%filter(Treatment == "None-Wet")%>%filter(!(trait%in%c("Days_emergence", "Height", "SLA", "LDMC"))), aes(x = Population, y = mean)) +
-                geom_point()+
+f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("AvgDiam", "RMR", "Length", "Tips"))), aes(x = Treatment, y = mean, col = Population)) +
+                geom_point(position = position_dodge(width = 0.5))+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
                 theme_bw()+
@@ -113,109 +129,32 @@ f_BG_trait <-ggplot(mean_trait_long%>%filter(Treatment == "None-Wet")%>%filter(!
 
 # Graph them together
 ggarrange(f_AG_trait, f_BG_trait, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right", heights = c(1, 2.5))
-TukeyHSD(aov(value~Population, data = trait_long%>%
-               filter(Treatment == "None-Wet")%>%
-               filter(trait == "SLA")))
+          font.label = list(size = 15), common.legend = TRUE, legend = "right", heights = c(1, 1))
 
-#----------------------------------------------------------#
-# How did the trait shift by BRTE competition and water treatment?
-# Create separate PCAs for aboveground and belowground traits
 
-# Aboveground traits
-AG_trait_matrix <- as.matrix(trait_master[,17:ncol(trait_master)])
-AG_pca_trait = rda(AG_trait_matrix, scale = TRUE)
-AG_pca_trait_scores = as.data.frame(scores(AG_pca_trait, choices=c(1,2), display=c("sites")))
-AG_pca_trait_scores_lab = as.data.frame(cbind(trait_master[,1:6],AG_pca_trait_scores)) 
-AG_pca_trait_scores_lab$Population <- ordered(as.factor(AG_nmds_trait_scores_lab$Population), levels = c("Butte Valley","Steens","EOARC",
-                                                                                                          "Water Canyon",  "Reno"))
-AG_pca_trait_scores_lab$Treatment <- apply(AG_pca_trait_scores_lab[ ,3:4 ] , 1 , paste , collapse = "_" )
-summary(AG_pca_trait)
-AG_en = as.data.frame(scores(AG_pca_trait, choices=c(1,2), display=c("species")))
-f_AG_pca <- ggplot(AG_pca_trait_scores_lab, aes(x = PC1, y = PC2)) + #plot pca in ggplot2
-  geom_point(size = 4, aes( shape = Population, colour = Treatment), alpha = 0.5)+
-  geom_hline(aes(yintercept=0), color="grey") + 
-  geom_vline(aes(xintercept=0), color="grey") +
-  theme(text = element_text(size=15),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 15))+
-  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
-  geom_segment(data = AG_en, aes(x = 0, y = 0, xend = PC1, yend = PC2),
-               alpha = 0.5, size = 1, colour = "grey30") +
-  geom_text(data = AG_en, aes(x = PC1, y = PC2), colour = "grey30", 
-            fontface = "bold", label = row.names(AG_en))+
-  xlab("PC1 (37.2%)")+
-  ylab("PC2 (29.7%)")+
-  xlim(-2.3,2.3)
-
-# Belowground traits
-BG_trait_matrix <- as.matrix(trait_master[,7:16])
-BG_pca_trait = rda(BG_trait_matrix, scale = TRUE)
-BG_pca_trait_scores = as.data.frame(scores(BG_pca_trait, choices = c(1,2), display = c("sites")))
-BG_pca_trait_scores_lab = as.data.frame(cbind(trait_master[,1:6],BG_pca_trait_scores)) 
-BG_pca_trait_scores_lab$Population <- ordered(as.factor(BG_pca_trait_scores_lab$Population), levels = c("Butte Valley","Steens","EOARC", 
-                                                                                                          "Water Canyon",  "Reno"))
-BG_pca_trait_scores_lab$Treatment <- apply(BG_pca_trait_scores_lab[ ,3:4 ] , 1 , paste , collapse = "_" )
-summary(BG_pca_trait)
-BG_en = as.data.frame(scores(BG_pca_trait, choices=c(1,2), display=c("species")))
-f_BG_pca <- ggplot(BG_pca_trait_scores_lab, aes(x = PC1, y = PC2)) + #plot pca in ggplot2
-  geom_point(size = 4, aes( shape = Population, colour = Treatment), alpha = 0.5)+
-  geom_hline(aes(yintercept=0), color="grey") + 
-  geom_vline(aes(xintercept=0), color="grey") +
-  theme(text = element_text(size=15),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 15))+
-  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
-  geom_segment(data = BG_en, aes(x = 0, y = 0, xend = PC1, yend = PC2),
-               alpha = 0.5, size = 1, colour = "grey30") +
-  geom_text(data = BG_en, aes(x = PC1, y = PC2), colour = "grey30", 
-            fontface = "bold", label = row.names(BG_en))+
-  xlab("PC1 (70.2%)")+
-  ylab("PC2 (14.6%)")+
-  ylim(-1.5, 1.2)+
-  xlim(-1.5,2.3)
-
-# Graph them together
-ggarrange(f_AG_pca, f_BG_pca, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right")
 
 #----------------------------------------------------------#
 # Is trait plasticity correlated with BRTE resistance?
 
 # Calculate PCA score distance as a metric of plasticity
-AG_plasticity <- AG_pca_trait_scores_lab %>%
-  select(Population, Replicate, Competition, Water, PC1, PC2) %>%
+plasticity <- pca_trait_scores_lab %>%
+  dplyr::select(Population, Replicate, Competition, Water, PC1, PC2) %>%
   pivot_wider(names_from = Competition, values_from = c(PC1, PC2)) %>%
   group_by(Population, Replicate, Water) %>%
   na.omit()%>%
-  summarise(d_AG = sqrt((PC1_BRTE-PC1_None)^2 + (PC2_BRTE- PC2_None)^2))
-
-BG_plasticity <- BG_pca_trait_scores_lab %>%
-  select(Population, Replicate, Competition, Water, PC1, PC2) %>%
-  pivot_wider(names_from = Competition, values_from = c(PC1, PC2)) %>%
-  group_by(Population, Replicate, Water) %>%
-  na.omit()%>%
-  summarise(d_BG = sqrt((PC1_BRTE-PC1_None)^2 + (PC2_BRTE- PC2_None)^2))
+  summarise(d_trait = sqrt((PC1_BRTE-PC1_None)^2 + (PC2_BRTE- PC2_None)^2))
 
 # Calculate BRTE resistance: survival rate BRTE - None and biomass BRTE - None
-survival_delta <- growth %>%
-  select(Population, Replicate, Water, Competition, POSE_survival_stem_count) %>%
+survival_delta <- growth%>%
+  dplyr::select(Population, Replicate, Water, Competition, POSE_survival_stem_count) %>%
   mutate(survivalrate = POSE_survival_stem_count/25) %>%
-  select(Population, Replicate, Water, Competition, survivalrate) %>%
+  dplyr::select(Population, Replicate, Water, Competition, survivalrate) %>%
   pivot_wider(names_from = Competition, values_from = survivalrate) %>%
   group_by(Population, Replicate, Water) %>%
   summarise(survival_delta = BRTE-None)
 biomass_delta <- biomass_dat %>%
   filter(Life_stage == "seedling") %>%
-  select(Population, Replicate, Water, Competition, POSE) %>%
+  dplyr::select(Population, Replicate, Water, Competition, POSE) %>%
   pivot_wider(names_from = Competition, values_from = POSE) %>%
   group_by(Population, Replicate, Water) %>%
   na.omit()%>%
@@ -223,9 +162,8 @@ biomass_delta <- biomass_dat %>%
 
 # Combine dataframes to plot it
 plastic_combined <- left_join(survival_delta, biomass_delta) %>%
-  left_join(., AG_plasticity) %>%
-  left_join(., BG_plasticity)
-f1 <- ggplot(plastic_combined, aes(x = d_AG, y = survival_delta)) +
+  left_join(., plasticity) 
+f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta)) +
         geom_point(aes(col = Water))+
         theme(text = element_text(size=12),
               panel.grid.major = element_blank(),
@@ -235,9 +173,9 @@ f1 <- ggplot(plastic_combined, aes(x = d_AG, y = survival_delta)) +
               panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
               axis.title = element_text(size = 12))+
         ylab(bquote(italic(P.~secunda)~Survival~Rate~(BRTE-None))) +
-        xlab("Aboveground trait platicity")+
+        xlab("Trait platicity")+
         geom_smooth(method = "lm", colour="black", size=0.5)
-f2 <- ggplot(plastic_combined, aes(x = d_AG, y = biomass_delta)) +
+f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta)) +
         geom_point(aes(col = Water))+
         theme(text = element_text(size=12),
               panel.grid.major = element_blank(),
@@ -247,35 +185,12 @@ f2 <- ggplot(plastic_combined, aes(x = d_AG, y = biomass_delta)) +
               panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
               axis.title = element_text(size = 12))+
         ylab(bquote(italic(P.~secunda)~Biomass~(BRTE-None))) +
-        xlab("Aboveground trait platicity")+
-        geom_smooth(method = "lm", colour="black", size=0.5)
-f3 <- ggplot(plastic_combined, aes(x = d_BG, y = survival_delta)) +
-        geom_point(aes(col = Water))+
-        theme(text = element_text(size=12),
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              panel.background = element_blank(),
-              axis.line = element_line(colour = "black"),
-              panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-              axis.title = element_text(size = 12))+
-        ylab(bquote(italic(P.~secunda)~Survival~Rate~(BRTE-None))) +
-        xlab("Belowground trait platicity")+
-        geom_smooth(method = "lm", colour="black", size=0.5)
-f4 <- ggplot(plastic_combined, aes(x = d_BG, y = biomass_delta)) +
-        geom_point(aes(col = Water))+
-        theme(text = element_text(size=12),
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              panel.background = element_blank(),
-              axis.line = element_line(colour = "black"),
-              panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-              axis.title = element_text(size = 12))+
-        ylab(bquote(italic(P.~secunda)~Biomass~(BRTE-None))) +
-        xlab("Belowground trait platicity")+
+        xlab("Trait platicity")+
         geom_smooth(method = "lm", colour="black", size=0.5)
 
+
 # Graph them together
-ggarrange(f1, f2, f3, f4, ncol = 2, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)"),
+ggarrange(f1, f2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
           font.label = list(size = 15), common.legend = TRUE, legend = "right")
 #----------------------------------------------------------#
 # Which trait is correlated with higher POSE survival rate?
@@ -300,11 +215,11 @@ cor.mtest <- function(mat, ...) {
   p.mat
 }
 
-p.mat <- cor.mtest(survival_trait[,7:ncol(survival_trait)])# matrix of the p-values
+p.mat <- cor.mtest(survival_trait[,7:ncol(survival_trait)])# matrix of p-values
 
 corrplot(cor(survival_trait[,7:ncol(survival_trait)]), type="upper", order="hclust", 
          p.mat = p.mat, sig.level = 0.01, insig = "blank")
 
-ggplot(survival_trait%>%pivot_longer(cols = Length_cm:LDMC, names_to = "trait", values_to = "value"), aes(x = value, y = POSE_survival_stem_count))+
+ggplot(survival_trait%>%pivot_longer(cols = Length:LDMC, names_to = "trait", values_to = "value"), aes(x = value, y = POSE_survival_stem_count))+
   geom_point()+
   facet_wrap(~trait, scale = "free")
