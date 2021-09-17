@@ -12,6 +12,7 @@ library(ggplot2) #plot
 library(ggpubr) #combine plots
 library(vegan) #nmds
 library(corrplot) #correlation matrix
+library(dplyr)
 
 # Prep data
 root_traits <- full_join(rootbiomass, root) %>%
@@ -19,15 +20,15 @@ root_traits <- full_join(rootbiomass, root) %>%
   mutate(SRL = Length_cm/Root_Weight_g,
          Coarse_cm = LenTotHistoClasses-D0L05,
          Fine_cm = D0L05) %>% #calculate specific root length, coarse root length, and fine root length
-  select(PotID, Length_cm, SRL, SurfArea_cm2, AvgDiam_mm, Tips, Forks, Fine_cm, Coarse_cm) 
+  dplyr::select(PotID, Length_cm, SRL, SurfArea_cm2, AvgDiam_mm, Tips, Forks, Fine_cm, Coarse_cm) 
   
 biomass_traits <- biomass %>%
   filter(Species == "POSE") %>%
   inner_join(., rootbiomass) %>%
-  select(-Species) %>%
+  dplyr::select(-Species) %>%
   mutate(TotalBiomass = Dry_Biomass_Weight_g+Root_Weight_g,
          RMR = Root_Weight_g/TotalBiomass) %>% #calculate total biomass weight and root to mass ratio
-  select(PotID, TotalBiomass, RMR)
+  dplyr::select(PotID, TotalBiomass, RMR)
 
 height_trait<- height %>% 
   group_by(PotID) %>% 
@@ -40,7 +41,7 @@ leaf_traits <- leaftraits %>%
          LDMC = DryLeafWeight_g/FreshLeafArea_cm2/NumberLeaves) #calculate specific leaf area and leaf dry matter content
 
 germination_dates <- germination %>%
-  select(PotID, Days_emergence) %>%
+  dplyr::select(PotID, Days_emergence) %>%
   drop_na()
 
 trait_master <- inner_join(potID, root_traits)%>%
@@ -71,7 +72,7 @@ se <- function(x){
 # Standardize the data
 pairs(~RMR + Tips + Length + Fine + Coarse + SRL + SurfArea + AvgDiam + Forks + TotalBiomass, trait_matrix_raw)
 trait_matrix <- as.data.frame(decostand(trait_matrix_raw, "standardize")) %>%
-  dplyr::select( -Fine, -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
+  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
 
 
 #----------------------------------------------------------#
@@ -100,7 +101,9 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
                alpha = 0.5, size = 1, colour = "grey30") +
   geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
             fontface = "bold", label = row.names(envout), size = 5)+
-  xlim(-2, 2.3)
+  xlim(-2, 2.3)+
+  xlab("PC1 (50.4%)")+
+  ylab("PC2 (14.6%)")
 
 #----------------------------------------------------------#
 # How did each trait respond to the treatment?
@@ -120,7 +123,7 @@ f_AG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("Emergence", "Height", "
                 facet_wrap(~trait, scales = "free", ncol = 2)+
                 theme_bw()+
                 ylab("")
-f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("AvgDiam", "RMR", "Length", "Tips"))), aes(x = Treatment, y = mean, col = Population)) +
+f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("AvgDiam", "RMR", "Length", "Tips", "Fine", "Coarse"))), aes(x = Treatment, y = mean, col = Population)) +
                 geom_point(position = position_dodge(width = 0.5))+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
@@ -129,7 +132,7 @@ f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("AvgDiam", "RMR", "Leng
 
 # Graph them together
 ggarrange(f_AG_trait, f_BG_trait, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right", heights = c(1, 1))
+          font.label = list(size = 15), common.legend = TRUE, legend = "right", heights = c(1, 1.5))
 
 
 
@@ -151,14 +154,14 @@ survival_delta <- growth%>%
   dplyr::select(Population, Replicate, Water, Competition, survivalrate) %>%
   pivot_wider(names_from = Competition, values_from = survivalrate) %>%
   group_by(Population, Replicate, Water) %>%
-  summarise(survival_delta = BRTE-None)
+  summarise(survival_delta = (BRTE-None)/None)
 biomass_delta <- biomass_dat %>%
   filter(Life_stage == "seedling") %>%
   dplyr::select(Population, Replicate, Water, Competition, POSE) %>%
   pivot_wider(names_from = Competition, values_from = POSE) %>%
   group_by(Population, Replicate, Water) %>%
   na.omit()%>%
-  summarise(biomass_delta = BRTE-None)
+  summarise(biomass_delta = (BRTE-None)/None)
 
 # Combine dataframes to plot it
 plastic_combined <- left_join(survival_delta, biomass_delta) %>%
@@ -172,7 +175,7 @@ f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta)) +
               axis.line = element_line(colour = "black"),
               panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
               axis.title = element_text(size = 12))+
-        ylab(bquote(italic(P.~secunda)~Survival~Rate~(BRTE-None))) +
+        ylab(bquote(Relative~Change~italic(P.~secunda)~Establishment)) +
         xlab("Trait platicity")+
         geom_smooth(method = "lm", colour="black", size=0.5)
 f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta)) +
@@ -184,7 +187,7 @@ f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta)) +
               axis.line = element_line(colour = "black"),
               panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
               axis.title = element_text(size = 12))+
-        ylab(bquote(italic(P.~secunda)~Biomass~(BRTE-None))) +
+        ylab(bquote(Relative~Change~italic(P.~secunda)~Biomass)) +
         xlab("Trait platicity")+
         geom_smooth(method = "lm", colour="black", size=0.5)
 

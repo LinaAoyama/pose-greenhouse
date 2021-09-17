@@ -20,7 +20,8 @@ ramets <- inner_join(potID, rametcount) %>% filter(Population != "Gund")
 demography <- full_join(growth, ramets) %>% filter(Population != "Gund")
 biomass_dat <- inner_join(potID, biomass) %>%
   filter(Population != "Gund") %>%
-  pivot_wider(names_from = Species, values_from = Dry_Biomass_Weight_g)
+  pivot_wider(names_from = Species, values_from = Dry_Biomass_Weight_g) %>%
+  replace(is.na(.),0)
 
 # Function for standard error
 se <- function(x){
@@ -102,29 +103,9 @@ fig_establish <- ggplot(summary_seedling, aes(x = Treatment, y = mean, col = Pop
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   ylab(bquote(italic(P.~secunda)~Establishment)) 
 
-# Stats for POSE survival rate by pop
-summary(aov(POSE_survival_stem_count ~ Population*Competition*Water, data = growth))
-TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%filter(Competition == "None")%>%
-              filter(Water == "Wet")))
-TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%filter(Competition == "None")%>%
-               filter(Water == "Dry")))
-TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%filter(Competition == "BRTE")%>%
-               filter(Water == "Wet")))
-TukeyHSD(aov(POSE_survival_stem_count~Population, data = growth%>%filter(Competition == "BRTE")%>%
-               filter(Water == "Dry")))
-
-# Stats for interaction of Competition and Water trts on POSE survival rate
-summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth))
-summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
-               filter(Population == "Butte Valley")))
-summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
-              filter(Population == "Steens")))
-summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
-              filter(Population == "EOARC")))
-summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
-              filter(Population == "Water Canyon")))
-summary(aov(POSE_survival_stem_count ~ Competition*Water, data = growth%>%
-              filter(Population == "Reno")))
+# Stats for POSE survival rate 
+summary(aov(POSE_survival_stem_count ~ Population*Treatment, data = growth)) #both pop and treatment differences are significant
+summary(lme(POSE_survival_stem_count ~ Treatment*Population, random = ~ 1|Replicate, data = growth))
 
 # seedling POSE biomass by population
 fig_biomass <- ggplot(summary_biomass, aes(x = Treatment, y = mean, col = Population)) +
@@ -140,21 +121,15 @@ fig_biomass <- ggplot(summary_biomass, aes(x = Treatment, y = mean, col = Popula
                   scale_y_log10()+
                   ylab(bquote(italic(P.~secunda)~Biomass~(g))) 
 
-# Stats for POSE biomass by pop
-summary(aov(POSE ~ Population*Water*Competition, data = biomass_dat%>%filter(Life_stage == "seedling")))
+# Stats for interaction of pop and treatment on POSE biomass 
+summary(aov(POSE ~ Treatment*Population, data = biomass_dat%>%filter(Life_stage == "seedling")))  #sig treatment differences but no pop or interaction
+summary(lme(POSE ~ Treatment*Population, random = ~ 1|Replicate, data = biomass_dat%>%filter(Life_stage == "seedling")))
 
-# Stats for interaction of Competition and Water on POSE biomass 
-summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling")))
-summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
-              filter(Population == "Butte Valley")))
-summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
-              filter(Population == "Steens")))
-summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
-              filter(Population == "EOARC")))
-summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
-              filter(Population == "Water Canyon")))
-summary(aov(POSE ~ Competition*Water, data = biomass_dat%>%filter(Life_stage == "seedling") %>%
-              filter(Population == "Reno")))
+# Stats for pop differences
+TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "BRTE-Dry")))
+TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "BRTE-Wet")))
+TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "None-Dry")))
+TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "None-Wet")))
 
 # Graph them together
 ggarrange( fig_establish, fig_biomass, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
