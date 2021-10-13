@@ -78,7 +78,7 @@ trait_matrix <- as.data.frame(decostand(trait_matrix_raw, "standardize")) %>%
 #----------------------------------------------------------#
 # How did the trait shift by BRTE competition and water treatment?
 # Create PCA of traits
-pca_trait = rda(trait_matrix, scale = TRUE) #run PCA on all traits
+pca_trait = rda(trait_matrix, scale = FALSE) #run PCA on all traits
 biplot(pca_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
 pca_trait_scores <- as.data.frame(scores(pca_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
 pca_trait_scores_lab = as.data.frame(cbind(trait_master[,1:6],pca_trait_scores)) #add plot info back
@@ -109,7 +109,9 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
 # PCA within each treatment:
 # BRTE_DRY
 trait_BRTE_dry <- trait_master %>%
-  filter(Competition == "BRTE" & Water == "Dry")
+  filter(Competition == "BRTE" & Water == "Dry") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
 trait_BRTE_dry_matrix <- as.matrix(trait_BRTE_dry[,7:ncol(trait_BRTE_dry)])
 pca_BRTE_dry_trait = rda(trait_BRTE_dry_matrix , scale = TRUE) #run PCA on all traits
 biplot(pca_BRTE_dry_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -139,7 +141,9 @@ PCA_BRTE_dry <- ggplot(pca_trait_scores_lab_BRTE_dry, aes(x = PC1, y = PC2))+
 
 #BRTE_WET
 trait_BRTE_wet <- trait_master %>%
-  filter(Competition == "BRTE" & Water == "Wet")
+  filter(Competition == "BRTE" & Water == "Wet") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
 trait_BRTE_wet_matrix <- as.matrix(trait_BRTE_wet[,7:ncol(trait_BRTE_wet)])
 pca_BRTE_wet_trait = rda(trait_BRTE_wet_matrix , scale = TRUE) #run PCA on all traits
 biplot(pca_BRTE_wet_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -169,7 +173,9 @@ PCA_BRTE_wet <- ggplot(pca_trait_scores_lab_BRTE_wet, aes(x = PC1, y = PC2))+
 
 # None_DRY
 trait_None_dry <- trait_master %>%
-  filter(Competition == "None" & Water == "Dry")
+  filter(Competition == "None" & Water == "Dry") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
 trait_None_dry_matrix <- as.matrix(trait_None_dry[,7:ncol(trait_None_dry)])
 pca_None_dry_trait = rda(trait_None_dry_matrix , scale = TRUE) #run PCA on all traits
 biplot(pca_None_dry_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -200,7 +206,9 @@ PCA_None_dry <- ggplot(pca_trait_scores_lab_None_dry, aes(x = PC1, y = PC2))+
 
 #NONE_WET
 trait_None_wet <- trait_master %>%
-  filter(Competition == "None" & Water == "Wet")
+  filter(Competition == "None" & Water == "Wet") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
 trait_None_wet_matrix <- as.matrix(trait_None_wet[,7:ncol(trait_None_wet)])
 pca_None_wet_trait = rda(trait_None_wet_matrix , scale = TRUE) #run PCA on all traits
 biplot(pca_None_wet_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -227,7 +235,9 @@ PCA_None_wet <- ggplot(pca_trait_scores_lab_None_wet, aes(x = PC1, y = PC2))+
                   #xlim(-2, 2.3)+
                   xlab("PC1 (38.6%)")+
                   ylab("PC2 (20.7%)")
-ggarrange(PCA_None_wet, PCA_None_dry, PCA_BRTE_wet, PCA_BRTE_dry, common.legend = TRUE)
+ggarrange(PCA_None_wet, PCA_None_dry, PCA_BRTE_wet, PCA_BRTE_dry, 
+          common.legend = TRUE,
+          labels = c("None-Wet", "None-Dry", "BRTE-Wet", "BRTE-Dry"))
 #----------------------------------------------------------#
 # How did each trait respond to the treatment?
 # Calculate mean and standard error of each trait by population and treatment
