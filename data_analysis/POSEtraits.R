@@ -78,7 +78,7 @@ trait_matrix <- as.data.frame(decostand(trait_matrix_raw, "standardize")) %>%
 #----------------------------------------------------------#
 # How did the trait shift by BRTE competition and water treatment?
 # Create PCA of traits
-pca_trait = rda(trait_matrix, scale = FALSE) #run PCA on all traits
+pca_trait = rda(trait_matrix, scale = TRUE) #run PCA on all traits
 biplot(pca_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
 pca_trait_scores <- as.data.frame(scores(pca_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
 pca_trait_scores_lab = as.data.frame(cbind(trait_master[,1:6],pca_trait_scores)) #add plot info back
@@ -105,6 +105,129 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
   xlab("PC1 (50.4%)")+
   ylab("PC2 (14.6%)")
 
+
+# PCA within each treatment:
+# BRTE_DRY
+trait_BRTE_dry <- trait_master %>%
+  filter(Competition == "BRTE" & Water == "Dry")
+trait_BRTE_dry_matrix <- as.matrix(trait_BRTE_dry[,7:ncol(trait_BRTE_dry)])
+pca_BRTE_dry_trait = rda(trait_BRTE_dry_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_BRTE_dry_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_BRTE_dry <- as.data.frame(scores(pca_BRTE_dry_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_BRTE_dry = as.data.frame(cbind(trait_BRTE_dry[,1:6],pca_trait_scores_BRTE_dry)) #add plot info back
+pca_trait_scores_lab_BRTE_dry$Population <- ordered(as.factor(pca_trait_scores_lab_BRTE_dry$Population), levels = c("Butte Valley","Steens","EOARC",
+                                                                                                  "Water Canyon",  "Reno"))
+envout<-as.data.frame(scores(pca_BRTE_dry_trait , choices=c(1,2), display=c("species")))
+summary(pca_BRTE_dry_trait)
+PCA_BRTE_dry <- ggplot(pca_trait_scores_lab_BRTE_dry, aes(x = PC1, y = PC2))+
+                  geom_point(size = 4, aes(colour = Population), alpha = 0.5)+
+                  theme(text = element_text(size=18),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        axis.line = element_line(colour = "black"),
+                        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+                        axis.title = element_text(size = 15))+
+                  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+                  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+                               alpha = 0.5, size = 1, colour = "grey30") +
+                  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+                            fontface = "bold", label = row.names(envout), size = 5)+
+                  #xlim(-2, 2.3)+
+                  xlab("PC1 (41.6%)")+
+                  ylab("PC2 (20.7%)")
+
+#BRTE_WET
+trait_BRTE_wet <- trait_master %>%
+  filter(Competition == "BRTE" & Water == "Wet")
+trait_BRTE_wet_matrix <- as.matrix(trait_BRTE_wet[,7:ncol(trait_BRTE_wet)])
+pca_BRTE_wet_trait = rda(trait_BRTE_wet_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_BRTE_wet_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_BRTE_wet <- as.data.frame(scores(pca_BRTE_wet_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_BRTE_wet = as.data.frame(cbind(trait_BRTE_wet[,1:6],pca_trait_scores_BRTE_wet)) #add plot info back
+pca_trait_scores_lab_BRTE_wet$Population <- ordered(as.factor(pca_trait_scores_lab_BRTE_wet$Population), levels = c("Butte Valley","Steens","EOARC",
+                                                                                                                    "Water Canyon",  "Reno"))
+envout<-as.data.frame(scores(pca_BRTE_wet_trait , choices=c(1,2), display=c("species")))
+summary(pca_BRTE_wet_trait)
+PCA_BRTE_wet <- ggplot(pca_trait_scores_lab_BRTE_wet, aes(x = PC1, y = PC2))+
+                  geom_point(size = 4, aes(colour = Population), alpha = 0.5)+
+                  theme(text = element_text(size=18),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        axis.line = element_line(colour = "black"),
+                        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+                        axis.title = element_text(size = 15))+
+                  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+                  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+                               alpha = 0.5, size = 1, colour = "grey30") +
+                  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+                            fontface = "bold", label = row.names(envout), size = 5)+
+                  #xlim(-2, 2.3)+
+                  xlab("PC1 (38.7%)")+
+                  ylab("PC2 (21.1%)")
+
+# None_DRY
+trait_None_dry <- trait_master %>%
+  filter(Competition == "None" & Water == "Dry")
+trait_None_dry_matrix <- as.matrix(trait_None_dry[,7:ncol(trait_None_dry)])
+pca_None_dry_trait = rda(trait_None_dry_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_None_dry_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_None_dry <- as.data.frame(scores(pca_None_dry_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_None_dry = as.data.frame(cbind(trait_None_dry[,1:6],pca_trait_scores_None_dry)) #add plot info back
+pca_trait_scores_lab_None_dry$Population <- ordered(as.factor(pca_trait_scores_lab_None_dry$Population), levels = c("Butte Valley","Steens","EOARC",
+                                                                                                                    "Water Canyon",  "Reno"))
+envout<-as.data.frame(scores(pca_None_dry_trait , choices=c(1,2), display=c("species")))
+summary(pca_None_dry_trait)
+PCA_None_dry <- ggplot(pca_trait_scores_lab_None_dry, aes(x = PC1, y = PC2))+
+                  geom_point(size = 4, aes(colour = Population), alpha = 0.5)+
+                  theme(text = element_text(size=18),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        axis.line = element_line(colour = "black"),
+                        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+                        axis.title = element_text(size = 15))+
+                  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+                  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+                               alpha = 0.5, size = 1, colour = "grey30") +
+                  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+                            fontface = "bold", label = row.names(envout), size = 5)+
+                  #xlim(-2, 2.3)+
+                  xlab("PC1 (47.2%)")+
+                  ylab("PC2 (16.3%)")
+
+
+#NONE_WET
+trait_None_wet <- trait_master %>%
+  filter(Competition == "None" & Water == "Wet")
+trait_None_wet_matrix <- as.matrix(trait_None_wet[,7:ncol(trait_None_wet)])
+pca_None_wet_trait = rda(trait_None_wet_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_None_wet_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_None_wet <- as.data.frame(scores(pca_None_wet_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_None_wet = as.data.frame(cbind(trait_None_wet[,1:6],pca_trait_scores_None_wet)) #add plot info back
+pca_trait_scores_lab_None_wet$Population <- ordered(as.factor(pca_trait_scores_lab_None_wet$Population), levels = c("Butte Valley","Steens","EOARC",
+                                                                                                                    "Water Canyon",  "Reno"))
+envout<-as.data.frame(scores(pca_None_wet_trait , choices=c(1,2), display=c("species")))
+summary(pca_None_wet_trait)
+PCA_None_wet <- ggplot(pca_trait_scores_lab_None_wet, aes(x = PC1, y = PC2))+
+                  geom_point(size = 4, aes(colour = Population), alpha = 0.5)+
+                  theme(text = element_text(size=18),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        axis.line = element_line(colour = "black"),
+                        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+                        axis.title = element_text(size = 15))+
+                  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+                  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+                               alpha = 0.5, size = 1, colour = "grey30") +
+                  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+                            fontface = "bold", label = row.names(envout), size = 5)+
+                  #xlim(-2, 2.3)+
+                  xlab("PC1 (38.6%)")+
+                  ylab("PC2 (20.7%)")
+ggarrange(PCA_None_wet, PCA_None_dry, PCA_BRTE_wet, PCA_BRTE_dry, common.legend = TRUE)
 #----------------------------------------------------------#
 # How did each trait respond to the treatment?
 # Calculate mean and standard error of each trait by population and treatment
