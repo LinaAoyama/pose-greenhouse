@@ -18,9 +18,10 @@ library(dplyr)
 root_traits <- full_join(rootbiomass, root) %>%
   group_by(PotID) %>%
   mutate(SRL = Length_cm/Root_Weight_g,
-         Coarse_cm = LenTotHistoClasses-D0L05,
-         Fine_cm = D0L05) %>% #calculate specific root length, coarse root length, and fine root length
-  dplyr::select(PotID, Length_cm, SRL, SurfArea_cm2, AvgDiam_mm, Tips, Forks, Fine_cm, Coarse_cm) 
+         Coarse = LenTotHistoClasses-D0L05,
+         Fine = D0L05,
+         PropF = D0L05/LenTotHistoClasses) %>% #calculate specific root length, coarse root length, and fine root length
+  dplyr::select(PotID, Length_cm, SRL, SurfArea_cm2, AvgDiam_mm, Tips, Forks, Fine, Coarse, PropF) 
   
 biomass_traits <- biomass %>%
   filter(Species == "POSE") %>%
@@ -50,8 +51,8 @@ trait_master <- inner_join(potID, root_traits)%>%
   inner_join(., leaf_traits) %>%
   inner_join(., germination_dates) %>%
   filter(Population != "Gund")
-colnames(trait_master) <- c('PlotID', 'Life_stage', 'Competition', 'Water', 'Population', 'Replicate',
-                            'Length', 'SRL', 'SurfArea', 'AvgDiam', 'Tips', 'Forks', 'Fine', 'Coarse', 
+colnames(trait_master) <- c('PotID', 'Life_stage', 'Competition', 'Water', 'Population', 'Replicate',
+                            'Length', 'SRL', 'SurfArea', 'AvgDiam', 'Tips', 'Forks', 'Fine', 'Coarse', 'PropF',
                             'TotalBiomass', 'RMR', 'Height', 'SLA', 'LDMC', 'Emergence')
 
 trait_matrix_raw <- as.matrix(trait_master[,7:ncol(trait_master)]) #extract only the trait value columns
@@ -70,9 +71,9 @@ se <- function(x){
 #-----------------------------------------
 # Take out any traits that are collinear
 # Standardize the data
-pairs(~RMR + Tips + Length + Fine + Coarse + SRL + SurfArea + AvgDiam + Forks + TotalBiomass, trait_matrix_raw)
+pairs(~RMR + Tips + Length + Fine + Coarse + SRL + SurfArea + AvgDiam + Forks +PropF + TotalBiomass, trait_matrix_raw)
 trait_matrix <- as.data.frame(decostand(trait_matrix_raw, "standardize")) %>%
-  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
 
 
 #----------------------------------------------------------#
@@ -102,8 +103,8 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
   geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
             fontface = "bold", label = row.names(envout), size = 5)+
   xlim(-2, 2.3)+
-  xlab("PC1 (50.4%)")+
-  ylab("PC2 (14.6%)")
+  xlab("PC1 (39.8%)")+
+  ylab("PC2 (16.0%)")
 
 
 # PCA within each treatment:
@@ -111,7 +112,7 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
 trait_BRTE_dry <- trait_master %>%
   filter(Competition == "BRTE" & Water == "Dry") %>%
   as.data.frame(decostand(., "standardize")) %>%
-  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
 trait_BRTE_dry_matrix <- as.matrix(trait_BRTE_dry[,7:ncol(trait_BRTE_dry)])
 pca_BRTE_dry_trait = rda(trait_BRTE_dry_matrix , scale = TRUE) #run PCA on all traits
 biplot(pca_BRTE_dry_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -136,14 +137,14 @@ PCA_BRTE_dry <- ggplot(pca_trait_scores_lab_BRTE_dry, aes(x = PC1, y = PC2))+
                   geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
                             fontface = "bold", label = row.names(envout), size = 5)+
                   #xlim(-2, 2.3)+
-                  xlab("PC1 (41.6%)")+
-                  ylab("PC2 (20.7%)")
+                  xlab("PC1 (35.4%)")+
+                  ylab("PC2 (17.9%)")
 
 #BRTE_WET
 trait_BRTE_wet <- trait_master %>%
   filter(Competition == "BRTE" & Water == "Wet") %>%
   as.data.frame(decostand(., "standardize")) %>%
-  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
 trait_BRTE_wet_matrix <- as.matrix(trait_BRTE_wet[,7:ncol(trait_BRTE_wet)])
 pca_BRTE_wet_trait = rda(trait_BRTE_wet_matrix , scale = TRUE) #run PCA on all traits
 biplot(pca_BRTE_wet_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -168,14 +169,14 @@ PCA_BRTE_wet <- ggplot(pca_trait_scores_lab_BRTE_wet, aes(x = PC1, y = PC2))+
                   geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
                             fontface = "bold", label = row.names(envout), size = 5)+
                   #xlim(-2, 2.3)+
-                  xlab("PC1 (38.7%)")+
-                  ylab("PC2 (21.1%)")
+                  xlab("PC1 (31.1%)")+
+                  ylab("PC2 (22.3%)")
 
 # None_DRY
 trait_None_dry <- trait_master %>%
   filter(Competition == "None" & Water == "Dry") %>%
   as.data.frame(decostand(., "standardize")) %>%
-  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
 trait_None_dry_matrix <- as.matrix(trait_None_dry[,7:ncol(trait_None_dry)])
 pca_None_dry_trait = rda(trait_None_dry_matrix , scale = TRUE) #run PCA on all traits
 biplot(pca_None_dry_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -200,15 +201,15 @@ PCA_None_dry <- ggplot(pca_trait_scores_lab_None_dry, aes(x = PC1, y = PC2))+
                   geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
                             fontface = "bold", label = row.names(envout), size = 5)+
                   #xlim(-2, 2.3)+
-                  xlab("PC1 (47.2%)")+
-                  ylab("PC2 (16.3%)")
+                  xlab("PC1 (29.3%)")+
+                  ylab("PC2 (21.2%)")
 
 
 #NONE_WET
 trait_None_wet <- trait_master %>%
   filter(Competition == "None" & Water == "Wet") %>%
   as.data.frame(decostand(., "standardize")) %>%
-  dplyr::select( -Forks, -SRL, -Coarse, -SurfArea, -TotalBiomass)
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
 trait_None_wet_matrix <- as.matrix(trait_None_wet[,7:ncol(trait_None_wet)])
 pca_None_wet_trait = rda(trait_None_wet_matrix , scale = TRUE) #run PCA on all traits
 biplot(pca_None_wet_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -233,11 +234,11 @@ PCA_None_wet <- ggplot(pca_trait_scores_lab_None_wet, aes(x = PC1, y = PC2))+
                   geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
                             fontface = "bold", label = row.names(envout), size = 5)+
                   #xlim(-2, 2.3)+
-                  xlab("PC1 (38.6%)")+
-                  ylab("PC2 (20.7%)")
+                  xlab("PC1 (36.9%)")+
+                  ylab("PC2 (21.6%)")
 ggarrange(PCA_None_wet, PCA_None_dry, PCA_BRTE_wet, PCA_BRTE_dry, 
           common.legend = TRUE,
-          labels = c("None-Wet", "None-Dry", "BRTE-Wet", "BRTE-Dry"))
+          labels = c("None-Wet", "None-Dry", "BRTE-Wet", "BRTE-Dry"), label.x = .05, label.y = .99, font.label = c(color = "blue"))
 #----------------------------------------------------------#
 # How did each trait respond to the treatment?
 # Calculate mean and standard error of each trait by population and treatment
@@ -256,7 +257,7 @@ f_AG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("Emergence", "Height", "
                 facet_wrap(~trait, scales = "free", ncol = 2)+
                 theme_bw()+
                 ylab("")
-f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("AvgDiam", "RMR", "Length", "Tips", "Fine", "Coarse"))), aes(x = Treatment, y = mean, col = Population)) +
+f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("RMR", "Length", "Tips", "Fine", "Coarse", "PropF"))), aes(x = Treatment, y = mean, col = Population)) +
                 geom_point(position = position_dodge(width = 0.5))+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
@@ -308,7 +309,7 @@ f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta)) +
               axis.line = element_line(colour = "black"),
               panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
               axis.title = element_text(size = 12))+
-        ylab(bquote(Relative~Change~italic(P.~secunda)~Establishment)) +
+        ylab(bquote(Relative~Change~italic(P.~secunda)~Establishment~Rate)) +
         xlab("Trait platicity")+
         geom_smooth(method = "lm", colour="black", size=0.5)
 f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta)) +
@@ -330,32 +331,68 @@ ggarrange(f1, f2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
           font.label = list(size = 15), common.legend = TRUE, legend = "right")
 #----------------------------------------------------------#
 # Which trait is correlated with higher POSE survival rate?
-survival_trait <- inner_join(trait_master, stemcount) %>%
+trait_standard <- cbind(trait_master[,1:6],decostand(trait_master[,7:ncol(trait_master)], "standardize"))
+
+survival_trait <- inner_join(trait_standard, stemcount) %>%
   select(-POSE_emergence_stem_count) %>%
   select(-BRTE_stem_count) %>%
   drop_na()
-  
-# This function calculates p-value of the correlation
-cor.mtest <- function(mat, ...) {
-  mat <- as.matrix(mat)
-  n <- ncol(mat)
-  p.mat<- matrix(NA, n, n)
-  diag(p.mat) <- 0
-  for (i in 1:(n - 1)) {
-    for (j in (i + 1):n) {
-      tmp <- cor.test(mat[, i], mat[, j], ...)
-      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-    }
-  }
-  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-  p.mat
-}
+survival_trait$Treatment <- apply(survival_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
 
-p.mat <- cor.mtest(survival_trait[,7:ncol(survival_trait)])# matrix of p-values
-
-corrplot(cor(survival_trait[,7:ncol(survival_trait)]), type="upper", order="hclust", 
-         p.mat = p.mat, sig.level = 0.01, insig = "blank")
-
-ggplot(survival_trait%>%pivot_longer(cols = Length:LDMC, names_to = "trait", values_to = "value"), aes(x = value, y = POSE_survival_stem_count))+
+ggplot(survival_trait%>%select(-TotalBiomass)%>%
+         pivot_longer(cols = Length:LDMC, names_to = "trait", values_to = "value"), aes(x = value, y = POSE_survival_stem_count/25, col = Treatment))+
   geom_point()+
-  facet_wrap(~trait, scale = "free")
+  facet_wrap(~trait, scale = "free")+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(italic(P.~secunda)~Establishment~Rate)) +
+  xlab("Trait z-scores")
+
+totalbiomass_trait <- trait_standard %>%
+  select(-TotalBiomass) %>%
+  cbind(., trait_master[,15])
+totalbiomass_trait$Treatment <- apply(totalbiomass_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
+
+ggplot(totalbiomass_trait %>%
+  pivot_longer(cols = Length:LDMC, names_to = "trait", values_to = "value"), aes(x = value, y = TotalBiomass, col = Treatment))+
+  geom_point()+
+  facet_wrap(~trait, scale = "free")+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
+  xlab("Trait z-scores")
+
+
+
+# # This function calculates p-value of the correlation
+# cor.mtest <- function(mat, ...) {
+#   mat <- as.matrix(mat)
+#   n <- ncol(mat)
+#   p.mat<- matrix(NA, n, n)
+#   diag(p.mat) <- 0
+#   for (i in 1:(n - 1)) {
+#     for (j in (i + 1):n) {
+#       tmp <- cor.test(mat[, i], mat[, j], ...)
+#       p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+#     }
+#   }
+#   colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+#   p.mat
+# }
+# 
+# p.mat <- cor.mtest(survival_trait[,7:ncol(survival_trait)])# matrix of p-values
+# 
+# corrplot(cor(survival_trait[,7:ncol(survival_trait)]), type="upper", order="hclust", 
+#          p.mat = p.mat, sig.level = 0.01, insig = "blank")
+
+

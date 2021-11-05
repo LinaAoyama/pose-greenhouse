@@ -20,8 +20,11 @@ ramets <- inner_join(potID, rametcount) %>% filter(Population != "Gund")
 demography <- full_join(growth, ramets) %>% filter(Population != "Gund")
 biomass_dat <- inner_join(potID, biomass) %>%
   filter(Population != "Gund") %>%
+  filter(Species == "POSE") %>%
   pivot_wider(names_from = Species, values_from = Dry_Biomass_Weight_g) %>%
-  replace(is.na(.),0)
+  replace(is.na(.),0) %>%
+  inner_join(., rootbiomass) %>%
+  mutate(TotalBiomass = POSE + Root_Weight_g)
 
 # Function for standard error
 se <- function(x){
@@ -76,20 +79,20 @@ biomass_dat$Population <- ordered(as.factor(biomass_dat$Population), levels = c(
                                                                       "Water Canyon",  "Reno"))
 biomass_dat$Water <- ordered(as.factor(biomass_dat$Water), levels = c("Wet", "Dry"))
 biomass_dat$Treatment <- apply(biomass_dat[ ,3:4 ] , 1 , paste , collapse = "-" )
+
 # Calculate survival rates
 summary_seedling <- growth %>%
   group_by(Population, Treatment) %>%
   summarise(mean = mean(POSE_survival_stem_count/25),
               se = se(POSE_survival_stem_count/25))
 
-# Calculate mean biomass
+# Calculate mean total biomass
 summary_biomass <- biomass_dat %>%
-  filter(Life_stage == "seedling") %>%
-  dplyr::select(PotID, Population, Treatment, POSE) %>%
+  dplyr::select(PotID, Population, Treatment, TotalBiomass) %>%
   drop_na()%>%
   group_by(Population, Treatment) %>%
-  summarise(mean = mean(POSE), se = se(POSE))
-  
+  summarise(mean = mean(TotalBiomass), se = se(TotalBiomass))
+
 # seedling POSE survival rate by population 
 fig_establish <- ggplot(summary_seedling, aes(x = Treatment, y = mean, col = Population))+
                   theme(text = element_text(size=15),
@@ -98,16 +101,17 @@ fig_establish <- ggplot(summary_seedling, aes(x = Treatment, y = mean, col = Pop
                         panel.background = element_blank(),
                         axis.line = element_line(colour = "black"),
                         legend.position = c(0.2, 0.8), 
-                        axis.title = element_text(size = 15))+
+                        axis.title = element_text(size = 15),
+                        axis.title.x = element_blank())+
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-                  ylab(bquote(italic(P.~secunda)~Establishment)) 
+                  ylab(bquote(Establishment~Rate)) 
 
 # Stats for POSE survival rate 
 summary(aov(POSE_survival_stem_count ~ Population*Treatment, data = growth)) #both pop and treatment differences are significant
 summary(lme(POSE_survival_stem_count ~ Treatment*Population, random = ~ 1|Replicate, data = growth))
 
-# seedling POSE biomass by population
+# seedling POSE shoot biomass by population
 fig_biomass <- ggplot(summary_biomass, aes(x = Treatment, y = mean, col = Population)) +
                         theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
@@ -119,7 +123,7 @@ fig_biomass <- ggplot(summary_biomass, aes(x = Treatment, y = mean, col = Popula
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   scale_y_log10()+
-                  ylab(bquote(italic(P.~secunda)~Biomass~(g))) 
+                  ylab(bquote(Total~Biomass~(g))) 
 
 # Stats for interaction of pop and treatment on POSE biomass 
 summary(aov(POSE ~ Treatment*Population, data = biomass_dat%>%filter(Life_stage == "seedling")))  #sig treatment differences but no pop or interaction
@@ -132,9 +136,29 @@ TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedl
 TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "None-Wet")))
 
 # Graph them together
-ggarrange( fig_establish, fig_biomass, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
-           font.label = list(size = 15), legend = "right", common.legend = TRUE)
+ggarrange(fig_establish, fig_biomass, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
+           font.label = list(size = 15), legend = "right", common.legend = TRUE, align = "v", heights = c(1, 1.1))
 
+# Seedling mortality
+summary_mortality <- growth %>%
+  mutate(delta =  POSE_survival_stem_count- POSE_emergence_stem_count) %>%
+  group_by(Population, Treatment) %>%
+  summarise(mean = mean(delta),
+            se = se(delta))
+
+# seedling POSE mortality by population
+ggplot(summary_mortality, aes(x = Treatment, y = mean, col = Population)) +
+  theme(text = element_text(size=15),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = c(0.2, 0.2), 
+        axis.title = element_text(size = 15))+
+  geom_point(position = position_dodge(width = 0.5))+
+  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+  geom_hline(yintercept=0)+
+  ylab(bquote(italic(P.~secunda)~Delta~("9wks-6wks")) )
 
 # Distribution of POSE seedling counts by population and BRTE competition - EOARC, Steens, and Water Canyon resisted BRTE
 # # Calculate mean POSE stem counts by population
