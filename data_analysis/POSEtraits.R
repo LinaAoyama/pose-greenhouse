@@ -1,5 +1,5 @@
 # Preliminary data exploration
-# Seedling traits of Sandberg bluegrass (POSE) in the greenhouse
+# Seedling trait shifts of Sandberg bluegrass (POSE) in the greenhouse
 
 # Set pathway first
 
@@ -75,9 +75,8 @@ pairs(~RMR + Tips + Length + Fine + Coarse + SRL + SurfArea + AvgDiam + Forks +P
 trait_matrix <- as.data.frame(decostand(trait_matrix_raw, "standardize")) %>%
   dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
 
-
 #----------------------------------------------------------#
-# How did the trait shift by BRTE competition and water treatment?
+# Did the traits shift by BRTE competition and water treatment?
 # Create PCA of traits
 pca_trait = rda(trait_matrix, scale = FALSE) #run PCA on all traits
 biplot(pca_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -89,7 +88,7 @@ pca_trait_scores_lab$Treatment <- apply(pca_trait_scores_lab[ ,3:4 ] , 1 , paste
 envout<-as.data.frame(scores(pca_trait, choices=c(1,2), display=c("species")))
 summary(pca_trait)
 ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
-  geom_point(size = 4, aes(colour = Treatment, shape = Population), alpha = 0.5)+
+  geom_point(size = 4, aes(col = Treatment, shape = Population), alpha = 0.5)+
   theme(text = element_text(size=18),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -104,8 +103,168 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
             fontface = "bold", label = row.names(envout), size = 5)+
   xlim(-2, 2.3)+
   xlab("PC1 (39.8%)")+
-  ylab("PC2 (16.0%)")
+  ylab("PC2 (16.0%)")+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
 
+# PCA within each population:
+# Butte Valley
+trait_Butte <- trait_master %>%
+  filter(Population == "Butte Valley") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
+trait_Butte_matrix <- as.matrix(trait_Butte[,7:ncol(trait_Butte)])
+pca_Butte_trait = rda(trait_Butte_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_Butte_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_Butte <- as.data.frame(scores(pca_Butte_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_Butte = as.data.frame(cbind(trait_Butte[,1:6],pca_trait_scores_Butte)) #add plot info back
+pca_trait_scores_lab_Butte$Treatment <- apply(pca_trait_scores_lab_Butte[ ,3:4 ] , 1 , paste , collapse = "_" )
+envout<-as.data.frame(scores(pca_Butte_trait , choices=c(1,2), display=c("species")))
+summary(pca_Butte_trait)
+PCA_Butte <- ggplot(pca_trait_scores_lab_Butte, aes(x = PC1, y = PC2))+
+  geom_point(size = 4, aes(colour = Treatment), alpha = 0.5)+
+  theme(text = element_text(size=18),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 15))+
+  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               alpha = 0.5, size = 1, colour = "grey30") +
+  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+            fontface = "bold", label = row.names(envout), size = 5)+
+  #xlim(-2, 2.3)+
+  xlab("PC1 (32.7%)")+
+  ylab("PC2 (21.9%)")
+
+# Steens
+trait_Steens <- trait_master %>%
+  filter(Population == "Steens") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
+trait_Steens_matrix <- as.matrix(trait_Steens[,7:ncol(trait_Steens)])
+pca_Steens_trait = rda(trait_Steens_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_Steens_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_Steens <- as.data.frame(scores(pca_Steens_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_Steens = as.data.frame(cbind(trait_Steens[,1:6],pca_trait_scores_Steens)) #add plot info back
+pca_trait_scores_lab_Steens$Treatment <- apply(pca_trait_scores_lab_Steens[ ,3:4 ] , 1 , paste , collapse = "_" )
+envout<-as.data.frame(scores(pca_Steens_trait , choices=c(1,2), display=c("species")))
+summary(pca_Steens_trait)
+PCA_Steens <- ggplot(pca_trait_scores_lab_Steens, aes(x = PC1, y = PC2))+
+  geom_point(size = 4, aes(colour = Treatment), alpha = 0.5)+
+  theme(text = element_text(size=18),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 15))+
+  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               alpha = 0.5, size = 1, colour = "grey30") +
+  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+            fontface = "bold", label = row.names(envout), size = 5)+
+  #xlim(-2, 2.3)+
+  xlab("PC1 (42.1%)")+
+  ylab("PC2 (18.4%)")
+
+# EOARC
+trait_EOARC <- trait_master %>%
+  filter(Population == "EOARC") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
+trait_EOARC_matrix <- as.matrix(trait_EOARC[,7:ncol(trait_EOARC)])
+pca_EOARC_trait = rda(trait_EOARC_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_EOARC_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_EOARC <- as.data.frame(scores(pca_EOARC_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_EOARC = as.data.frame(cbind(trait_EOARC[,1:6],pca_trait_scores_EOARC)) #add plot info back
+pca_trait_scores_lab_EOARC$Treatment <- apply(pca_trait_scores_lab_EOARC[ ,3:4 ] , 1 , paste , collapse = "_" )
+envout<-as.data.frame(scores(pca_EOARC_trait , choices=c(1,2), display=c("species")))
+summary(pca_EOARC_trait)
+PCA_EOARC <- ggplot(pca_trait_scores_lab_EOARC, aes(x = PC1, y = PC2))+
+  geom_point(size = 4, aes(colour = Treatment), alpha = 0.5)+
+  theme(text = element_text(size=18),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 15))+
+  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               alpha = 0.5, size = 1, colour = "grey30") +
+  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+            fontface = "bold", label = row.names(envout), size = 5)+
+  #xlim(-2, 2.3)+
+  xlab("PC1 (48.9%)")+
+  ylab("PC2 (14.5%)")
+
+# Water Canyon
+trait_WC <- trait_master %>%
+  filter(Population == "Water Canyon") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
+trait_WC_matrix <- as.matrix(trait_WC[,7:ncol(trait_WC)])
+pca_WC_trait = rda(trait_WC_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_WC_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_WC <- as.data.frame(scores(pca_WC_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_WC = as.data.frame(cbind(trait_WC[,1:6],pca_trait_scores_WC)) #add plot info back
+pca_trait_scores_lab_WC$Treatment <- apply(pca_trait_scores_lab_WC[ ,3:4 ] , 1 , paste , collapse = "_" )
+envout<-as.data.frame(scores(pca_WC_trait , choices=c(1,2), display=c("species")))
+summary(pca_WC_trait)
+PCA_WC <- ggplot(pca_trait_scores_lab_WC, aes(x = PC1, y = PC2))+
+  geom_point(size = 4, aes(colour = Treatment), alpha = 0.5)+
+  theme(text = element_text(size=18),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 15))+
+  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               alpha = 0.5, size = 1, colour = "grey30") +
+  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+            fontface = "bold", label = row.names(envout), size = 5)+
+  #xlim(-2, 2.3)+
+  xlab("PC1 (41.2%)")+
+  ylab("PC2 (20.7%)")
+
+# Reno
+trait_Reno <- trait_master %>%
+  filter(Population == "Reno") %>%
+  as.data.frame(decostand(., "standardize")) %>%
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
+trait_Reno_matrix <- as.matrix(trait_Reno[,7:ncol(trait_Reno)])
+pca_Reno_trait = rda(trait_Reno_matrix , scale = TRUE) #run PCA on all traits
+biplot(pca_Reno_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
+pca_trait_scores_Reno <- as.data.frame(scores(pca_Reno_trait, choices=c(1,2), display=c("sites"))) #extract pca1 and pca2 scores
+pca_trait_scores_lab_Reno = as.data.frame(cbind(trait_Reno[,1:6],pca_trait_scores_Reno)) #add plot info back
+pca_trait_scores_lab_Reno$Treatment <- apply(pca_trait_scores_lab_Reno[ ,3:4 ] , 1 , paste , collapse = "_" )
+envout<-as.data.frame(scores(pca_Reno_trait , choices=c(1,2), display=c("species")))
+summary(pca_Reno_trait)
+PCA_Reno <- ggplot(pca_trait_scores_lab_Reno, aes(x = PC1, y = PC2))+
+  geom_point(size = 4, aes(colour = Treatment), alpha = 0.5)+
+  theme(text = element_text(size=18),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 15))+
+  scale_shape_manual(values=c(8, 5, 15, 17, 19))+
+  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               alpha = 0.5, size = 1, colour = "grey30") +
+  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+            fontface = "bold", label = row.names(envout), size = 5)+
+  #xlim(-2, 2.3)+
+  xlab("PC1 (54.3%)")+
+  ylab("PC2 (17.9%)")
+
+ggarrange(PCA_Butte, PCA_Steens, PCA_EOARC, PCA_WC, PCA_Reno,
+          common.legend = TRUE,
+          labels = c("Butte Valley", "Steens", "EOARC", "Water Canyon", "Reno"), label.x = .1, label.y = .99, font.label = c(color = "blue"))
 
 # PCA within each treatment:
 # BRTE_DRY
@@ -240,34 +399,84 @@ ggarrange(PCA_None_wet, PCA_None_dry, PCA_BRTE_wet, PCA_BRTE_dry,
           common.legend = TRUE,
           labels = c("None-Wet", "None-Dry", "BRTE-Wet", "BRTE-Dry"), label.x = .05, label.y = .99, font.label = c(color = "blue"))
 #----------------------------------------------------------#
-# How did each trait respond to the treatment?
+#How did each trait respond to the treatment?
 # Calculate mean and standard error of each trait by population and treatment
-trait_long <- trait_master %>%
+trait_long <- cbind(trait_master[,1:6],decostand(trait_master[,7:ncol(trait_master)], "standardize")) %>%
   pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")
-trait_long$Population <- ordered(as.factor(trait_long$Population), levels = c("Butte Valley","Steens","EOARC", 
+trait_long$Population <- ordered(as.factor(trait_long$Population), levels = c("Butte Valley","Steens","EOARC",
                                                                               "Water Canyon",  "Reno"))
 trait_long$Treatment <- apply(trait_long[ ,3:4 ] , 1 , paste , collapse = "-" )
+trait_long$Treatment <- ordered(as.factor(trait_long$Treatment), levels = c("None-Wet", "None-Dry", "BRTE-Wet", "BRTE-Dry"))
+
 mean_trait_long <- trait_long%>%
   group_by(Population, Treatment, trait) %>%
   summarise(mean = mean(value),
             se = se(value))
-f_AG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("Emergence", "Height", "SLA", "LDMC")), aes(x = Treatment, y = mean, col = Population)) +
+f_AG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("Emergence", "Height", "SLA", "LDMC")), aes(x = Population, y = mean, col = Treatment)) +
                 geom_point(position = position_dodge(width = 0.5))+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
                 theme_bw()+
+                scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))+
                 ylab("")
-f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("RMR", "Length", "Tips", "Fine", "Coarse", "PropF"))), aes(x = Treatment, y = mean, col = Population)) +
+f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("RMR",  "Tips", "PropF", "SRL"))), aes(x = Population, y = mean, col = Treatment)) +
                 geom_point(position = position_dodge(width = 0.5))+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
                 theme_bw()+
+                scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))+
                 ylab("")
 
 # Graph them together
 ggarrange(f_AG_trait, f_BG_trait, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right", heights = c(1, 1.5))
+          font.label = list(size = 15), common.legend = TRUE, legend = "right", heights = c(1, 1))
 
+#----------------------------------------------------------#
+# Which trait is correlated with higher POSE survival rate?
+trait_standard <- cbind(trait_master[,1:6],decostand(trait_master[,7:ncol(trait_master)], "standardize"))
+
+survival_trait <- inner_join(trait_standard, stemcount) %>%
+  select(-POSE_emergence_stem_count) %>%
+  select(-BRTE_stem_count) %>%
+  drop_na()
+survival_trait$Treatment <- apply(survival_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
+
+ggplot(survival_trait%>%select(-TotalBiomass)%>%
+         pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
+         filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL")), 
+       aes(x = value, y = POSE_survival_stem_count/25, col = as.factor(Treatment)))+
+  geom_jitter()+
+  facet_wrap(~trait, scale = "free", ncol = 4)+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(italic(P.~secunda)~Establishment~Rate)) +
+  xlab("Trait z-scores")
+
+totalbiomass_trait <- trait_standard %>%
+  select(-TotalBiomass) %>%
+  cbind(., trait_master[,16])
+totalbiomass_trait$Treatment <- apply(totalbiomass_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
+
+ggplot(totalbiomass_trait %>%
+  pivot_longer(cols = Length:LDMC, names_to = "trait", values_to = "value") %>%
+  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL")),
+  aes(x = value, y = TotalBiomass, col = Treatment))+
+  geom_jitter()+
+  facet_wrap(~trait, scale = "free", ncol = 4)+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
+  xlab("Trait z-scores")
 
 
 #----------------------------------------------------------#
@@ -301,98 +510,32 @@ biomass_delta <- biomass_dat %>%
 plastic_combined <- left_join(survival_delta, biomass_delta) %>%
   left_join(., plasticity) 
 f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta)) +
-        geom_point(aes(col = Water))+
-        theme(text = element_text(size=12),
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              panel.background = element_blank(),
-              axis.line = element_line(colour = "black"),
-              panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-              axis.title = element_text(size = 12))+
-        ylab(bquote(Relative~Change~italic(P.~secunda)~Establishment~Rate)) +
-        xlab("Trait platicity")+
-        geom_smooth(method = "lm", colour="black", size=0.5)
+  geom_point(aes(col = Water))+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(Relative~Change~italic(P.~secunda)~Establishment~Rate)) +
+  xlab("Trait platicity")+
+  geom_smooth(method = "lm", colour="black", size=0.5)
 f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta)) +
-        geom_point(aes(col = Water))+
-        theme(text = element_text(size=12),
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              panel.background = element_blank(),
-              axis.line = element_line(colour = "black"),
-              panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-              axis.title = element_text(size = 12))+
-        ylab(bquote(Relative~Change~italic(P.~secunda)~Biomass)) +
-        xlab("Trait platicity")+
-        geom_smooth(method = "lm", colour="black", size=0.5)
+  geom_point(aes(col = Water))+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(Relative~Change~italic(P.~secunda)~Biomass)) +
+  xlab("Trait platicity")+
+  geom_smooth(method = "lm", colour="black", size=0.5)
 
 
 # Graph them together
 ggarrange(f1, f2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
           font.label = list(size = 15), common.legend = TRUE, legend = "right")
-#----------------------------------------------------------#
-# Which trait is correlated with higher POSE survival rate?
-trait_standard <- cbind(trait_master[,1:6],decostand(trait_master[,7:ncol(trait_master)], "standardize"))
-
-survival_trait <- inner_join(trait_standard, stemcount) %>%
-  select(-POSE_emergence_stem_count) %>%
-  select(-BRTE_stem_count) %>%
-  drop_na()
-survival_trait$Treatment <- apply(survival_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
-
-ggplot(survival_trait%>%select(-TotalBiomass)%>%
-         pivot_longer(cols = Length:LDMC, names_to = "trait", values_to = "value"), aes(x = value, y = POSE_survival_stem_count/25, col = Treatment))+
-  geom_point()+
-  facet_wrap(~trait, scale = "free")+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(italic(P.~secunda)~Establishment~Rate)) +
-  xlab("Trait z-scores")
-
-totalbiomass_trait <- trait_standard %>%
-  select(-TotalBiomass) %>%
-  cbind(., trait_master[,15])
-totalbiomass_trait$Treatment <- apply(totalbiomass_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
-
-ggplot(totalbiomass_trait %>%
-  pivot_longer(cols = Length:LDMC, names_to = "trait", values_to = "value"), aes(x = value, y = TotalBiomass, col = Treatment))+
-  geom_point()+
-  facet_wrap(~trait, scale = "free")+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
-  xlab("Trait z-scores")
-
-
-
-# # This function calculates p-value of the correlation
-# cor.mtest <- function(mat, ...) {
-#   mat <- as.matrix(mat)
-#   n <- ncol(mat)
-#   p.mat<- matrix(NA, n, n)
-#   diag(p.mat) <- 0
-#   for (i in 1:(n - 1)) {
-#     for (j in (i + 1):n) {
-#       tmp <- cor.test(mat[, i], mat[, j], ...)
-#       p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
-#     }
-#   }
-#   colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
-#   p.mat
-# }
-# 
-# p.mat <- cor.mtest(survival_trait[,7:ncol(survival_trait)])# matrix of p-values
-# 
-# corrplot(cor(survival_trait[,7:ncol(survival_trait)]), type="upper", order="hclust", 
-#          p.mat = p.mat, sig.level = 0.01, insig = "blank")
-
 
