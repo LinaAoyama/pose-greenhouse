@@ -591,6 +591,7 @@ ggplot(plasticity_v2, aes(x = Population, y = d_trait, fill = Treatment)) +
   scale_fill_manual(values=c("#999999", "#6A0DAD", "#E69F00"))+
   ylab(bquote(Trait~Plasticity)) 
 
+
 # Calculate stress tolerance: relative change in survival rate and biomass 
 growth$Treatment <- apply(growth[ ,3:4 ] , 1 , paste , collapse = "_" )
 biomass_dat$Treatment <- apply(biomass_dat[ ,3:4 ] , 1 , paste , collapse = "_" )
