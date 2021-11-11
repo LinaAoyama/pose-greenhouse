@@ -585,9 +585,11 @@ plasticity_v2 <- pca_trait_scores_lab %>%
             BRTE_Dry = sqrt((PC1_BRTE_Dry-PC1_None_Wet)^2 + (PC2_BRTE_Dry- PC2_None_Wet)^2)) %>%
   pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "d_trait")
 
-ggplot(plasticity_v2, aes(x = Population, y = d_trait)) +
+ggplot(plasticity_v2, aes(x = Population, y = d_trait, fill = Treatment)) +
   geom_boxplot()+
-  facet_wrap(vars(Treatment))
+  theme_classic()+
+  scale_fill_manual(values=c("#999999", "#6A0DAD", "#E69F00"))+
+  ylab(bquote(Trait~Plasticity)) 
 
 # Calculate stress tolerance: relative change in survival rate and biomass 
 growth$Treatment <- apply(growth[ ,3:4 ] , 1 , paste , collapse = "_" )
