@@ -7,6 +7,7 @@
 # Did POSE traits shift by BRTE competition and water treatment?
 # How did each trait respond to each treatment?
 # Which trait is correlated with higher POSE performance?
+# Is trait plasticity correlated with drought tolerance?
 
 # Data
 source("data_compiling/compile_demography.R")
