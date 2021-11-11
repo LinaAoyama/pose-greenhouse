@@ -89,10 +89,12 @@ summary_seedling <- growth %>%
 
 # Calculate mean total biomass
 summary_biomass <- biomass_dat %>%
-  dplyr::select(PotID, Population, Treatment, TotalBiomass) %>%
+  mutate(root_shoot_ratio = Root_Weight_g/POSE) %>%
+  dplyr::select(PotID, Population, Treatment, TotalBiomass, root_shoot_ratio) %>%
   drop_na()%>%
   group_by(Population, Treatment) %>%
-  summarise(mean = mean(TotalBiomass), se = se(TotalBiomass))
+  summarise(mean = mean(TotalBiomass), se = se(TotalBiomass),
+            mean_ratio = mean(root_shoot_ratio), se_ratio = se(root_shoot_ratio))
 
 # seedling POSE survival rate by population 
 fig_establish <- ggplot(summary_seedling, aes(x = Population, y = mean, col = Treatment))+
@@ -113,7 +115,7 @@ fig_establish <- ggplot(summary_seedling, aes(x = Population, y = mean, col = Tr
 summary(aov(POSE_survival_stem_count ~ Population*Treatment, data = growth)) #both pop and treatment differences are significant
 summary(lme(POSE_survival_stem_count ~ Treatment*Population, random = ~ 1|Replicate, data = growth))
 
-# seedling POSE shoot biomass by population
+# seedling POSE total biomass by population
 fig_biomass <- ggplot(summary_biomass, aes(x = Population, y = mean, col = Treatment)) +
                         theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
@@ -126,7 +128,8 @@ fig_biomass <- ggplot(summary_biomass, aes(x = Population, y = mean, col = Treat
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   scale_y_log10()+
                   ylab(bquote(Total~Biomass~(g))) +
-  scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))
+                  scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))
+
 
 # Stats for interaction of pop and treatment on POSE biomass 
 summary(aov(POSE ~ Treatment*Population, data = biomass_dat%>%filter(Life_stage == "seedling")))  #sig treatment differences but no pop or interaction
@@ -138,8 +141,22 @@ TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedl
 TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "None-Dry")))
 TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "None-Wet")))
 
+# seedling POSE root to shoot ratio by population
+fig_ratio <- ggplot(summary_biomass, aes(x = Population, y = mean_ratio, col = Treatment)) +
+  theme(text = element_text(size=15),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = c(0.2, 0.8), 
+        axis.title = element_text(size = 15))+
+  geom_point(position = position_dodge(width = 0.5))+
+  geom_errorbar(aes(ymin = mean_ratio-se_ratio, ymax = mean_ratio+se_ratio), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+  scale_y_log10()+
+  ylab(bquote(Root/Shoot~Ratio)) +
+  scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))
 # Graph them together
-ggarrange(fig_establish, fig_biomass, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
+ggarrange(fig_establish, fig_biomass,  ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
            font.label = list(size = 15), legend = "right", common.legend = TRUE, align = "v", heights = c(1, 1.1))
 
 # # Seedling mortality

@@ -1,7 +1,12 @@
-# Preliminary data exploration
-# Seedling trait shifts of Sandberg bluegrass (POSE) in the greenhouse
+# Seedling trait shifts of Sandberg bluegrass (POSE) grown in the greenhouse
+# Two treatments: Cheatgrass(BRTE) competition and water availability
 
-# Set pathway first
+# Set the data pathway first
+
+# Analysis:
+# Did POSE traits shift by BRTE competition and water treatment?
+# How did each trait respond to each treatment?
+# Which trait is correlated with higher POSE performance?
 
 # Data
 source("data_compiling/compile_demography.R")
@@ -10,9 +15,10 @@ source("data_compiling/compile_demography.R")
 library(tidyverse) #data wrangling
 library(ggplot2) #plot
 library(ggpubr) #combine plots
-library(vegan) #nmds
+library(vegan) #pca
 library(corrplot) #correlation matrix
 library(dplyr)
+library(codyn)
 
 # Prep data
 root_traits <- full_join(rootbiomass, root) %>%
@@ -69,14 +75,14 @@ se <- function(x){
 } 
 
 #-----------------------------------------
-# Take out any traits that are collinear
+# Take out any traits that are products of size and keep relativized metrics
 # Standardize the data
 pairs(~RMR + Tips + Length + Fine + Coarse + SRL + SurfArea + AvgDiam + Forks +PropF + TotalBiomass, trait_matrix_raw)
 trait_matrix <- as.data.frame(decostand(trait_matrix_raw, "standardize")) %>%
   dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
 
 #----------------------------------------------------------#
-# Did the traits shift by BRTE competition and water treatment?
+# Did POSE traits shift by BRTE competition and water treatment?
 # Create PCA of traits
 pca_trait = rda(trait_matrix, scale = FALSE) #run PCA on all traits
 biplot(pca_trait, display = c("sites", "species"), type = c("text", "points")) #plot biplot
@@ -399,7 +405,7 @@ ggarrange(PCA_None_wet, PCA_None_dry, PCA_BRTE_wet, PCA_BRTE_dry,
           common.legend = TRUE,
           labels = c("None-Wet", "None-Dry", "BRTE-Wet", "BRTE-Dry"), label.x = .05, label.y = .99, font.label = c(color = "blue"))
 #----------------------------------------------------------#
-#How did each trait respond to the treatment?
+# How did each trait respond to each treatment?
 # Calculate mean and standard error of each trait by population and treatment
 trait_long <- cbind(trait_master[,1:6],decostand(trait_master[,7:ncol(trait_master)], "standardize")) %>%
   pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")
@@ -419,7 +425,7 @@ f_AG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("Emergence", "Height", "
                 theme_bw()+
                 scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))+
                 ylab("")
-f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("RMR",  "Tips", "PropF", "SRL"))), aes(x = Population, y = mean, col = Treatment)) +
+f_BG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("RMR",  "Tips", "PropF", "SRL")), aes(x = Population, y = mean, col = Treatment)) +
                 geom_point(position = position_dodge(width = 0.5))+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
@@ -430,9 +436,8 @@ f_BG_trait <-ggplot(mean_trait_long%>%filter((trait%in%c("RMR",  "Tips", "PropF"
 # Graph them together
 ggarrange(f_AG_trait, f_BG_trait, ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
           font.label = list(size = 15), common.legend = TRUE, legend = "right", heights = c(1, 1))
-
 #----------------------------------------------------------#
-# Which trait is correlated with higher POSE survival rate?
+# Which trait is correlated with higher POSE performance?
 trait_standard <- cbind(trait_master[,1:6],decostand(trait_master[,7:ncol(trait_master)], "standardize"))
 
 survival_trait <- inner_join(trait_standard, stemcount) %>%
@@ -478,39 +483,67 @@ ggplot(totalbiomass_trait %>%
   ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
   xlab("Trait z-scores")
 
+#----------------------------------------------------------#
+# Dispersion and centroid of traits
+# multivariate_difference (codyn) uses a Bray-Curtis dissimilarity matrix to calculate changes in composition (distance between centroids) and dispersion (distance around centroids)
+trait_long_select <- trait_long %>%
+  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL")) %>%
+  mutate(value = value+3) #make all z-scores positive by adding 3
+
+multivariate_difference(trait_long_select, 
+                    time.var = NULL,
+                    replicate.var = "PotID",
+                    treatment.var = "Treatment",
+                    species.var = "trait",
+                    abundance.var = "value") #Overall, None-Wet and BRTE-Dry has the largest difference in trait composition and dispersion
+multivariate_difference(trait_long_select, 
+                        time.var = "Population",
+                        replicate.var = "PotID",
+                        treatment.var = "Treatment",
+                        species.var = "trait",
+                        abundance.var = "value",
+                        reference.treatment = "None-Wet") #Reno has the largest difference in trait composition between None-Wet and BRTE-DRY.
+adonis(value~Treatment, data = trait_long_select, perm = 999, method = "euclidean") #PERMANOVA results: Significant treatment effect p = 0.001
+
+treatment <- apply(trait_master[ ,3:4 ] , 1 , paste , collapse = "_" )
+dis <- vegdist(trait_matrix, method = "euclidean")
+mod <- betadisper(dis, group = treatment)
+anova(mod)
+TukeyHSD(mod)
+view(mod$vectors)
 
 #----------------------------------------------------------#
-# Is trait plasticity correlated with BRTE resistance?
+# Is trait plasticity correlated with drought tolerance?
 
 # Calculate PCA score distance as a metric of plasticity
 plasticity <- pca_trait_scores_lab %>%
   dplyr::select(Population, Replicate, Competition, Water, PC1, PC2) %>%
-  pivot_wider(names_from = Competition, values_from = c(PC1, PC2)) %>%
-  group_by(Population, Replicate, Water) %>%
+  pivot_wider(names_from = Water, values_from = c(PC1, PC2)) %>%
+  group_by(Population, Replicate, Competition) %>%
   na.omit()%>%
-  summarise(d_trait = sqrt((PC1_BRTE-PC1_None)^2 + (PC2_BRTE- PC2_None)^2))
+  summarise(d_trait = sqrt((PC1_Dry-PC1_Wet)^2 + (PC2_Dry- PC2_Wet)^2))
 
-# Calculate BRTE resistance: survival rate BRTE - None and biomass BRTE - None
+# Calculate drought tolerance: relative change in survival rate and biomass 
 survival_delta <- growth%>%
   dplyr::select(Population, Replicate, Water, Competition, POSE_survival_stem_count) %>%
   mutate(survivalrate = POSE_survival_stem_count/25) %>%
   dplyr::select(Population, Replicate, Water, Competition, survivalrate) %>%
-  pivot_wider(names_from = Competition, values_from = survivalrate) %>%
-  group_by(Population, Replicate, Water) %>%
-  summarise(survival_delta = (BRTE-None)/None)
+  pivot_wider(names_from = Water, values_from = survivalrate) %>%
+  group_by(Population, Replicate, Competition) %>%
+  summarise(survival_delta = (Dry-Wet)/Wet)
 biomass_delta <- biomass_dat %>%
   filter(Life_stage == "seedling") %>%
-  dplyr::select(Population, Replicate, Water, Competition, POSE) %>%
-  pivot_wider(names_from = Competition, values_from = POSE) %>%
-  group_by(Population, Replicate, Water) %>%
+  dplyr::select(Population, Replicate, Water, Competition, TotalBiomass) %>%
+  pivot_wider(names_from = Water, values_from = TotalBiomass) %>%
+  group_by(Population, Replicate, Competition) %>%
   na.omit()%>%
-  summarise(biomass_delta = (BRTE-None)/None)
+  summarise(biomass_delta = (Dry-Wet)/Wet)
 
 # Combine dataframes to plot it
 plastic_combined <- left_join(survival_delta, biomass_delta) %>%
   left_join(., plasticity) 
-f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta)) +
-  geom_point(aes(col = Water))+
+f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta, col = Competition)) +
+  geom_point(aes(col = Competition))+
   theme(text = element_text(size=12),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -518,11 +551,11 @@ f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta)) +
         axis.line = element_line(colour = "black"),
         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
         axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~italic(P.~secunda)~Establishment~Rate)) +
-  xlab("Trait platicity")+
-  geom_smooth(method = "lm", colour="black", size=0.5)
-f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta)) +
-  geom_point(aes(col = Water))+
+  ylab(bquote(Relative~Change~Establishment~Rate)) +
+  xlab("Trait plasticity")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5)
+f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta, col = Competition)) +
+  geom_point(aes(col = Competition))+
   theme(text = element_text(size=12),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -530,12 +563,86 @@ f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta)) +
         axis.line = element_line(colour = "black"),
         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
         axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~italic(P.~secunda)~Biomass)) +
-  xlab("Trait platicity")+
-  geom_smooth(method = "lm", colour="black", size=0.5)
+  ylab(bquote(Relative~Change~Total~Biomass)) +
+  xlab("Trait plasticity")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5)
 
 
 # Graph them together
 ggarrange(f1, f2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right")
+          font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
+
+# Alternative:
+# Calculate trait plasticity or deviation from None_Wet as control 
+plasticity_v2 <- pca_trait_scores_lab %>%
+  dplyr::select(Population, Replicate, Treatment, PC1, PC2) %>%
+  pivot_wider(names_from = Treatment, values_from = c(PC1, PC2)) %>%
+  group_by(Population, Replicate) %>%
+  na.omit()%>%
+  summarise(None_Dry = sqrt((PC1_None_Dry-PC1_None_Wet)^2 + (PC2_None_Dry- PC2_None_Wet)^2),
+            BRTE_Wet = sqrt((PC1_BRTE_Wet-PC1_None_Wet)^2 + (PC2_BRTE_Wet- PC2_None_Wet)^2),
+            BRTE_Dry = sqrt((PC1_BRTE_Dry-PC1_None_Wet)^2 + (PC2_BRTE_Dry- PC2_None_Wet)^2)) %>%
+  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "d_trait")
+
+ggplot(plasticity_v2, aes(x = Population, y = d_trait)) +
+  geom_boxplot()+
+  facet_wrap(vars(Treatment))
+
+# Calculate stress tolerance: relative change in survival rate and biomass 
+growth$Treatment <- apply(growth[ ,3:4 ] , 1 , paste , collapse = "_" )
+biomass_dat$Treatment <- apply(biomass_dat[ ,3:4 ] , 1 , paste , collapse = "_" )
+survival_delta_v2 <- growth%>%
+  dplyr::select(Population, Replicate, Treatment, POSE_survival_stem_count) %>%
+  mutate(survivalrate = POSE_survival_stem_count/25) %>%
+  dplyr::select(Population, Replicate, Treatment, survivalrate) %>%
+  pivot_wider(names_from = Treatment, values_from = survivalrate) %>%
+  group_by(Population, Replicate) %>%
+  summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
+            BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
+            BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
+  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "survival_delta")
+biomass_delta_v2 <- biomass_dat %>%
+  filter(Life_stage == "seedling") %>%
+  dplyr::select(Population, Replicate, Treatment, TotalBiomass) %>%
+  pivot_wider(names_from = Treatment, values_from = TotalBiomass) %>%
+  group_by(Population, Replicate) %>%
+  na.omit()%>%
+  summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
+            BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
+            BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
+  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "biomass_delta")
+
+# Combine dataframes to plot it
+plastic_combined_v2 <- left_join(survival_delta_v2, biomass_delta_v2) %>%
+  left_join(., plasticity_v2) 
+f1_V2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = survival_delta)) +
+  geom_point(aes(col = Treatment))+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(Relative~Change~Establishment~Rate)) +
+  xlab("Trait plasticity")+
+  geom_smooth(method = "lm", formula = y~poly(x,3), size=0.5, color = "black")+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+f2_v2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = biomass_delta)) +
+  geom_point(aes(col = Treatment))+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(Relative~Change~Total~Biomass)) +
+  xlab("Trait plasticity")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+
+# Graph them together
+ggarrange(f1_V2, f2_v2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
+          font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
 
