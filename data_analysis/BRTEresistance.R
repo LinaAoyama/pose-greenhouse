@@ -83,53 +83,77 @@ biomass_dat$Treatment <- ordered(as.factor(biomass_dat$Treatment), levels = c("N
 
 # Calculate survival rates
 summary_seedling <- growth %>%
-  group_by(Population, Treatment) %>%
+  group_by(Population, Water, Competition, Treatment) %>%
   summarise(mean = mean(POSE_survival_stem_count/25),
               se = se(POSE_survival_stem_count/25))
 
 # Calculate mean total biomass
 summary_biomass <- biomass_dat %>%
   mutate(root_shoot_ratio = Root_Weight_g/POSE) %>%
-  dplyr::select(PotID, Population, Treatment, TotalBiomass, root_shoot_ratio) %>%
+  dplyr::select(PotID, Population, Water, Competition, Treatment, TotalBiomass, root_shoot_ratio) %>%
   drop_na()%>%
-  group_by(Population, Treatment) %>%
+  group_by(Population, Water, Competition, Treatment) %>%
   summarise(mean = mean(TotalBiomass), se = se(TotalBiomass),
             mean_ratio = mean(root_shoot_ratio), se_ratio = se(root_shoot_ratio))
 
 # seedling POSE survival rate by population 
-fig_establish <- ggplot(summary_seedling, aes(x = Population, y = mean, col = Treatment))+
+fig_establish_None <- ggplot(summary_seedling %>% filter(Competition == "None"), aes(x = Population, y = mean, col = Treatment))+
                   theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
                         panel.grid.minor = element_blank(),
                         panel.background = element_blank(),
                         axis.line = element_line(colour = "black"),
-                        legend.position = c(0.2, 0.8), 
+                        legend.position = "none", 
                         axis.title = element_text(size = 15),
                         axis.title.x = element_blank())+
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   ylab(bquote(Establishment~Rate)) +
-                  scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))
-
+                  scale_color_manual(values=c( "#56B4E9","#E69F00"))
+fig_establish_BRTE <- ggplot(summary_seedling %>% filter(Competition == "BRTE"), aes(x = Population, y = mean, col = Treatment))+
+                  theme(text = element_text(size=15),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        axis.line = element_line(colour = "black"),
+                        legend.position = "none", 
+                        axis.title = element_text(size = 15),
+                        axis.title.x = element_blank())+
+                  geom_point(position = position_dodge(width = 0.5))+
+                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+                  ylab(bquote(Establishment~Rate)) +
+                  scale_color_manual(values=c( "#6A0DAD", "#999999"))
 # Stats for POSE survival rate 
 summary(aov(POSE_survival_stem_count ~ Population*Treatment, data = growth)) #both pop and treatment differences are significant
 summary(lme(POSE_survival_stem_count ~ Treatment*Population, random = ~ 1|Replicate, data = growth))
 
 # seedling POSE total biomass by population
-fig_biomass <- ggplot(summary_biomass, aes(x = Population, y = mean, col = Treatment)) +
+fig_biomass_None <- ggplot(summary_biomass%>% filter(Competition == "None"), aes(x = Population, y = mean, col = Treatment)) +
                         theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
                         panel.grid.minor = element_blank(),
                         panel.background = element_blank(),
                         axis.line = element_line(colour = "black"),
-                        legend.position = c(0.2, 0.8), 
+                        legend.position = "none", 
                         axis.title = element_text(size = 15))+
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   scale_y_log10()+
                   ylab(bquote(Total~Biomass~(g))) +
-                  scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))
-
+                  scale_color_manual(values=c("#56B4E9","#E69F00" ))
+fig_biomass_BRTE <- ggplot(summary_biomass%>% filter(Competition == "BRTE"), aes(x = Population, y = mean, col = Treatment)) +
+  theme(text = element_text(size=15),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = "none", 
+        axis.title = element_text(size = 15))+
+  geom_point(position = position_dodge(width = 0.5))+
+  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+  scale_y_log10()+
+  ylab(bquote(Total~Biomass~(g))) +
+  scale_color_manual(values=c("#6A0DAD", "#999999" ))
 
 # Stats for interaction of pop and treatment on POSE biomass 
 summary(aov(POSE ~ Treatment*Population, data = biomass_dat%>%filter(Life_stage == "seedling")))  #sig treatment differences but no pop or interaction
@@ -156,8 +180,8 @@ fig_ratio <- ggplot(summary_biomass, aes(x = Population, y = mean_ratio, col = T
   ylab(bquote(Root/Shoot~Ratio)) +
   scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))
 # Graph them together
-ggarrange(fig_establish, fig_biomass,  ncol = 1, nrow = 2, labels = c("(a)", "(b)"),
-           font.label = list(size = 15), legend = "right", common.legend = TRUE, align = "v", heights = c(1, 1.1))
+ggarrange(fig_establish_None, fig_establish_BRTE,  ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
+           font.label = list(size = 15), align = "v")
 
 # # Seedling mortality
 # summary_mortality <- growth %>%

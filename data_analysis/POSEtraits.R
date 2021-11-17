@@ -109,10 +109,54 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
   geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
             fontface = "bold", label = row.names(envout), size = 5)+
   xlim(-2, 2.3)+
+  ylim(-1.5, 3)+
   xlab("PC1 (39.8%)")+
   ylab("PC2 (16.0%)")+
   scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
 
+#calculate centroids within each treatment
+pca.centroids <- pca_trait_scores_lab %>%
+  group_by(Treatment) %>%
+  summarise(mean_PC1 = median(PC1),
+            mean_PC2 = median(PC2))
+
+ggplot(pca.centroids, aes(x = mean_PC1, y = mean_PC2))+
+  geom_point(size = 4, aes(col = Treatment), alpha = 0.5)+
+  theme(text = element_text(size=18),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 15))+
+  xlim(-1, 1)+
+  ylim(-1, 1)+
+  xlab("PC1 (39.8%)")+
+  ylab("PC2 (16.0%)")+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
+
+# calculate dispersion within each treatment
+pca.dispersion <- pca_trait_scores_lab %>%
+  group_by(Treatment) %>%
+  summarise(dispersion = sqrt((PC1-median(PC1))^2 + (PC2-median(PC2))^2))
+pca.dispersion.summary <- pca.dispersion %>%
+  group_by(Treatment) %>%
+  summarise(mean = mean(dispersion),
+            se = se(dispersion))
+ggplot(pca.dispersion.summary, aes(x = Treatment, y = mean, fill = Treatment))+
+  geom_bar(stat = "identity" , show.legend = FALSE)+
+  theme(text = element_text(size=18),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 15))+
+  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+  xlab("Treatment")+
+  ylab("Trait dispersion")+
+  scale_fill_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
+  
 # PCA within each population:
 # Butte Valley
 trait_Butte <- trait_master %>%
@@ -449,10 +493,10 @@ survival_trait$Treatment <- apply(survival_trait[ ,3:4 ] , 1 , paste , collapse 
 
 ggplot(survival_trait%>%select(-TotalBiomass)%>%
          pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
-         filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL")), 
-       aes(x = value, y = POSE_survival_stem_count/25, col = as.factor(Treatment)))+
-  geom_jitter()+
-  facet_wrap(~trait, scale = "free", ncol = 4)+
+         filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL", "Length")), 
+       aes(x = value, y = POSE_survival_stem_count/25))+
+  geom_jitter(aes(col = Treatment))+
+  facet_wrap(~trait, scale = "free", ncol = 3)+
   theme(text = element_text(size=12),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -461,7 +505,9 @@ ggplot(survival_trait%>%select(-TotalBiomass)%>%
         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
         axis.title = element_text(size = 12))+
   ylab(bquote(italic(P.~secunda)~Establishment~Rate)) +
-  xlab("Trait z-scores")
+  xlab("Trait z-scores")+
+  geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9" ))
 
 totalbiomass_trait <- trait_standard %>%
   select(-TotalBiomass) %>%
@@ -469,11 +515,11 @@ totalbiomass_trait <- trait_standard %>%
 totalbiomass_trait$Treatment <- apply(totalbiomass_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
 
 ggplot(totalbiomass_trait %>%
-  pivot_longer(cols = Length:LDMC, names_to = "trait", values_to = "value") %>%
-  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL")),
-  aes(x = value, y = TotalBiomass, col = Treatment))+
-  geom_jitter()+
-  facet_wrap(~trait, scale = "free", ncol = 4)+
+  pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value") %>%
+  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL",  "Length")),
+  aes(x = value, y = TotalBiomass))+
+  geom_jitter(aes(col = Treatment))+
+  facet_wrap(~trait, scale = "free", ncol = 3)+
   theme(text = element_text(size=12),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -482,7 +528,10 @@ ggplot(totalbiomass_trait %>%
         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
         axis.title = element_text(size = 12))+
   ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
-  xlab("Trait z-scores")
+  xlab("Trait z-scores")+
+  geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
+
 
 #----------------------------------------------------------#
 # Dispersion and centroid of traits
@@ -620,7 +669,7 @@ biomass_delta_v2 <- biomass_dat %>%
 plastic_combined_v2 <- left_join(survival_delta_v2, biomass_delta_v2) %>%
   left_join(., plasticity_v2) 
 f1_V2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = survival_delta)) +
-  geom_point(aes(col = Treatment))+
+  geom_point(aes(col = Treatment))+facet_grid(cols = vars(Population))+
   theme(text = element_text(size=12),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -630,10 +679,10 @@ f1_V2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = survival_delta)) +
         axis.title = element_text(size = 12))+
   ylab(bquote(Relative~Change~Establishment~Rate)) +
   xlab("Trait plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,3), size=0.5, color = "black")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
   scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
 f2_v2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = biomass_delta)) +
-  geom_point(aes(col = Treatment))+
+  geom_point(aes(col = Treatment))+facet_grid(cols = vars(Population))+
   theme(text = element_text(size=12),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -650,3 +699,87 @@ f2_v2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = biomass_delta)) +
 ggarrange(f1_V2, f2_v2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
           font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
 
+# Plasticity of PropF and LDMC and relative change in establishment rate and biomass
+trait_master$Treatment <- apply(trait_master[ ,3:4 ] , 1 , paste , collapse = "_" )
+PropF_delta <- trait_master %>%
+  dplyr::select(Population, Replicate, Treatment, PropF) %>%
+  pivot_wider(names_from = Treatment, values_from = PropF) %>%
+  group_by(Population, Replicate) %>%
+  summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
+            BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
+            BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
+  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "PropF_delta")
+
+LDMC_delta <- trait_master %>%
+  dplyr::select(Population, Replicate, Treatment, LDMC) %>%
+  pivot_wider(names_from = Treatment, values_from = LDMC) %>%
+  group_by(Population, Replicate) %>%
+  summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
+            BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
+            BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
+  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "LDMC_delta")
+
+trait_delta_combined <- left_join(survival_delta_v2, biomass_delta_v2) %>%
+  left_join(., PropF_delta)%>%
+  left_join(., LDMC_delta)
+trait_delta_combined$Population <- ordered(as.factor(trait_delta_combined$Population), levels = c("Butte Valley","Steens","EOARC",
+                                                                                  "Water Canyon",  "Reno"))
+f1_V3 <- ggplot(trait_delta_combined, aes(x = PropF_delta, y = survival_delta)) +
+  geom_jitter(aes(col = Treatment))+
+  facet_grid(cols = vars(Population))+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(Relative~Change~Establishment~Rate)) +
+  xlab("PropF plasticity")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+f2_v3 <- ggplot(trait_delta_combined, aes(x = PropF_delta, y = biomass_delta)) +
+  geom_point(aes(col = Treatment))+
+  facet_grid(cols = vars(Population))+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(Relative~Change~Total~Biomass)) +
+  xlab("PropF plasticity")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+f3_v3 <- ggplot(trait_delta_combined, aes(x = LDMC_delta, y = survival_delta)) +
+  geom_jitter(aes(col = Treatment))+
+  facet_grid(cols = vars(Population))+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(Relative~Change~Establishment~Rate)) +
+  xlab("LDMC plasticity")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+f4_v3 <- ggplot(trait_delta_combined, aes(x = LDMC_delta, y = biomass_delta)) +
+  geom_point(aes(col = Treatment))+
+  facet_grid(cols = vars(Population))+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+        axis.title = element_text(size = 12))+
+  ylab(bquote(Relative~Change~Total~Biomass)) +
+  xlab("LDMC plasticity")+
+  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+# Graph them together
+ggarrange(f1_V3, f2_v3, f3_v3, f4_v3, ncol = 2, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)"),
+          font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
