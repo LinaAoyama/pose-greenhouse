@@ -80,7 +80,7 @@ se <- function(x){
 # Standardize the data
 pairs(~RMR + Tips + Length + Fine + Coarse + SRL + SurfArea + AvgDiam + Forks +PropF + TotalBiomass, trait_matrix_raw)
 trait_matrix <- as.data.frame(decostand(trait_matrix_raw, "standardize")) %>%
-  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -Length, -AvgDiam, -TotalBiomass)
+  dplyr::select( -Forks, -Coarse, -Fine, -SurfArea, -AvgDiam, -TotalBiomass)
 
 #----------------------------------------------------------#
 # Did POSE traits shift by BRTE competition and water treatment?
@@ -108,11 +108,11 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
                alpha = 0.5, size = 1, colour = "grey30") +
   geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
             fontface = "bold", label = row.names(envout), size = 5)+
-  xlim(-2, 2.3)+
-  ylim(-1.5, 3)+
-  xlab("PC1 (39.8%)")+
-  ylab("PC2 (16.0%)")+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
+  xlim(-2, 2)+
+  ylim(-1.6, 1.6)+
+  xlab("PC1 (43.0%)")+
+  ylab("PC2 (14.4%)")+
+  scale_color_manual(values=c("#FBD947", "#FF8C07",  "#86BBE8","#0240FF"))
 
 #calculate centroids within each treatment
 pca.centroids <- pca_trait_scores_lab %>%
@@ -129,22 +129,23 @@ ggplot(pca.centroids, aes(x = mean_PC1, y = mean_PC2))+
         axis.line = element_line(colour = "black"),
         panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
         axis.title = element_text(size = 15))+
-  xlim(-1, 1)+
-  ylim(-1, 1)+
-  xlab("PC1 (39.8%)")+
-  ylab("PC2 (16.0%)")+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
+  xlim(-0.7, 0.7)+
+  ylim(-0.7, 0.7)+
+  xlab("PC1 (43.0%)")+
+  ylab("PC2 (14.4%)")+
+  scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))
 
 # calculate dispersion within each treatment
 pca.dispersion <- pca_trait_scores_lab %>%
-  group_by(Treatment) %>%
+  group_by(Treatment, Population) %>%
   summarise(dispersion = sqrt((PC1-median(PC1))^2 + (PC2-median(PC2))^2))
 pca.dispersion.summary <- pca.dispersion %>%
-  group_by(Treatment) %>%
+  group_by(Treatment, Population) %>%
   summarise(mean = mean(dispersion),
             se = se(dispersion))
 ggplot(pca.dispersion.summary, aes(x = Treatment, y = mean, fill = Treatment))+
   geom_bar(stat = "identity" , show.legend = FALSE)+
+  facet_wrap(vars(Population), ncol = 5)+
   theme(text = element_text(size=18),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -155,7 +156,9 @@ ggplot(pca.dispersion.summary, aes(x = Treatment, y = mean, fill = Treatment))+
   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
   xlab("Treatment")+
   ylab("Trait dispersion")+
-  scale_fill_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
+  scale_fill_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))+
+  scale_x_discrete(labels=c("BRTE_Dry" = "BD", "BRTE_Wet" = "BW",
+                            "None_Dry" = "ND", "None_Wet" = "NW"))
   
 # PCA within each population:
 # Butte Valley
@@ -507,30 +510,30 @@ ggplot(survival_trait%>%select(-TotalBiomass)%>%
   ylab(bquote(italic(P.~secunda)~Establishment~Rate)) +
   xlab("Trait z-scores")+
   geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9" ))
+  scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))
 
-totalbiomass_trait <- trait_standard %>%
-  select(-TotalBiomass) %>%
-  cbind(., trait_master[,16])
-totalbiomass_trait$Treatment <- apply(totalbiomass_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
-
-ggplot(totalbiomass_trait %>%
-  pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value") %>%
-  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL",  "Length")),
-  aes(x = value, y = TotalBiomass))+
-  geom_jitter(aes(col = Treatment))+
-  facet_wrap(~trait, scale = "free", ncol = 3)+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
-  xlab("Trait z-scores")+
-  geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00", "#56B4E9"))
+# totalbiomass_trait <- trait_standard %>%
+#   select(-TotalBiomass) %>%
+#   cbind(., trait_master[,16])
+# totalbiomass_trait$Treatment <- apply(totalbiomass_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
+# 
+# ggplot(totalbiomass_trait %>%
+#   pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value") %>%
+#   filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL",  "Length")),
+#   aes(x = value, y = TotalBiomass))+
+#   geom_jitter(aes(col = Treatment))+
+#   facet_wrap(~trait, scale = "free", ncol = 3)+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
+#   xlab("Trait z-scores")+
+#   geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
+#   scale_color_manual(values=c("#FBD947", "#FDAB02",  "#86BBE8","#0278E0"))
 
 
 #----------------------------------------------------------#
