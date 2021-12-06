@@ -93,7 +93,8 @@ fig_establish <-ggplot(population_seedling, aes(x = Population, y = mean))+
                         panel.background = element_blank(),
                         axis.line = element_line(colour = "black"),
                         legend.position = "none", 
-                        axis.title = element_text(size = 15))+
+                        axis.title = element_text(size = 15),
+                        axis.title.x = element_blank())+
                   geom_point()+
                   ylab(bquote(Establishment~Rate))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se),width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
@@ -270,7 +271,7 @@ fig_establish_None <- ggplot(summary_seedling %>% filter(Competition == "None"),
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   ylab(bquote(Establishment~Rate)) +
                   scale_color_manual(values=c( "#0240FF",  "#86BBE8"))+
-                  annotate("text", label = c("*", "*", "*", "*"), x = c(1, 2, 4, 5), y = 0.6, size = 8)
+                  annotate("text", label = c( "*", "*", "*"), x = c(2, 4, 5), y = 0.6, size = 8)
 fig_establish_BRTE <- ggplot(summary_seedling %>% filter(Competition == "BRTE"), aes(x = Population, y = mean, col = Treatment))+
                   theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
@@ -288,6 +289,11 @@ fig_establish_BRTE <- ggplot(summary_seedling %>% filter(Competition == "BRTE"),
                   annotate("text", label = c( "*"), x = c( 5), y = 0.6, size = 8)
 # Stats for POSE survival rate
 summary(aov(POSE_survival_stem_count ~ Population*Treatment, data = growth)) #both pop and treatment differences are significant
+TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_stage == "seedling") %>%filter(Population == "Butte Valley")))
+TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_stage == "seedling") %>%filter(Population == "Steens")))
+TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_stage == "seedling") %>%filter(Population == "Water Canyon")))
+TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_stage == "seedling") %>%filter(Population == "EOARC")))
+TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_stage == "seedling") %>%filter(Population == "Reno")))
 summary(lme(POSE_survival_stem_count ~ Treatment*Population, random = ~ 1|Replicate, data = growth))
 
 # # seedling POSE total biomass by population
@@ -319,9 +325,9 @@ summary(lme(POSE_survival_stem_count ~ Treatment*Population, random = ~ 1|Replic
 #   scale_color_manual(values=c("#6A0DAD", "#999999" ))
 
 # Graph them together
-ggarrange(fig_establish_None, fig_establish_BRTE, fig_establish,  fig_establish_DR,  
-          ncol = 2, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)"),
-          font.label = list(size = 15), align = "v", heights = c(1, 1.2))
+ggarrange(fig_establish, fig_establish_None, fig_establish_BRTE,   fig_establish_DR,  
+          ncol = 1, nrow = 4, labels = c("(a)", "(b)", "(c)", "(d)"),
+          font.label = list(size = 15), align = "v", heights = c(1,1, 1, 1.2))
 
 # 
 # # Stats for interaction of pop and treatment on POSE biomass 

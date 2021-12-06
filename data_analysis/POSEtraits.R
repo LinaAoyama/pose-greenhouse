@@ -610,7 +610,61 @@ delta.PCA.survival <- summary.PCA.survival %>%
   group_by(Population, Competition) %>%
   summarise(delta_PC1 = mean_PC1[Water =="Dry"]-mean_PC1[Water == "Wet"],
             delta_PC2 = mean_PC2[Water == "Dry"]-mean_PC2[Water == "Wet"],
-            delta_POSE = mean_POSE[Water == "Dry"]-mean_POSE[Water == "Wet"])
+            delta_POSE = (mean_POSE[Water == "Dry"]-mean_POSE[Water == "Wet"])/mean_POSE[Water == "Wet"],
+            distance = sqrt((mean_PC1[Water == "Dry"]-mean_PC1[Water == "Wet"])^2 + (mean_PC2[Water == "Dry"]-mean_PC2[Water == "Wet"])^2))
+
+ggplot(delta.PCA.survival, aes(x = distance, y = delta_POSE, col = Competition))+
+                            geom_point( size = 3)+
+                            theme(text = element_text(size=18),
+                                  panel.grid.major = element_blank(),
+                                  panel.grid.minor = element_blank(),
+                                  panel.background = element_blank(),
+                                  axis.line = element_line(colour = "black"),
+                                  panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+                                  axis.title = element_text(size = 15))+
+                            geom_vline(xintercept = 0, linetype = "dashed")+
+                            geom_hline(yintercept = 0, linetype = "dashed")+
+                            geom_text(aes(label=Population),hjust=-0.1, vjust=1)+
+                            ylim( -1, 0.1)+
+                            xlim(0, 1.1)+
+                            ylab(bquote(Delta~Establishment~Rate))+
+                            xlab(bquote(Euclidean~Distance))+
+                            scale_color_manual(values=c("#FF9507","#0240FF"))
+distance_None <- ggplot(delta.PCA.survival %>% filter(Competition == "None"), aes(x = distance, y = delta_POSE))+
+                      geom_point(colour = "#111111", size = 3)+
+                      theme(text = element_text(size=18),
+                            panel.grid.major = element_blank(),
+                            panel.grid.minor = element_blank(),
+                            panel.background = element_blank(),
+                            axis.line = element_line(colour = "black"),
+                            panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+                            axis.title = element_text(size = 15),
+                            legend.title = element_blank())+
+                      geom_vline(xintercept = 0, linetype = "dashed")+
+                      geom_hline(yintercept = 0, linetype = "dashed")+
+                      geom_text(aes(label=Population),hjust=-0.1, vjust=1)+
+                      ylim( -6.2, 1)+
+                      xlim(0, 1.1)+
+                      ylab(bquote(Delta~Establishment~Rate))+
+                      xlab(bquote(Euclidean~Distance))
+
+distance_BRTE <- ggplot(delta.PCA.survival %>% filter(Competition == "BRTE"), aes(x = distance, y = delta_POSE))+
+                      geom_point(colour = "#777777", size = 3)+
+                      theme(text = element_text(size=18),
+                            panel.grid.major = element_blank(),
+                            panel.grid.minor = element_blank(),
+                            panel.background = element_blank(),
+                            axis.line = element_line(colour = "black"),
+                            panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+                            axis.title = element_text(size = 15),
+                            legend.title = element_blank())+
+                      geom_vline(xintercept = 0, linetype = "dashed")+
+                      geom_hline(yintercept = 0, linetype = "dashed")+
+                      geom_text(aes(label=Population),hjust=-0.1, vjust=1)+
+                      ylim( -6.2, 1)+
+                      xlim(-0, 1.1)+
+                      ylab(bquote(Delta~Establishment~Rate))+
+                      xlab(bquote(Euclidean~Distance))
 delta_PC1_None <- ggplot(delta.PCA.survival%>% filter(Competition == "None"), aes(x = delta_PC1, y = delta_POSE))+
                       geom_point(colour = "#111111", size = 3)+
                       theme(text = element_text(size=18),
@@ -623,7 +677,6 @@ delta_PC1_None <- ggplot(delta.PCA.survival%>% filter(Competition == "None"), ae
                             legend.title = element_blank())+
                       geom_vline(xintercept = 0, linetype = "dashed")+
                       geom_hline(yintercept = 0, linetype = "dashed")+
-                      scale_shape_manual(values=c(8, 5, 15, 17, 19))+
                       geom_text(aes(label=Population),hjust=-0.1, vjust=1)+
                       ylim( -6.2, 1)+
                       xlim(-0.85, 0.3)+
@@ -642,7 +695,6 @@ delta_PC1_BRTE <- ggplot(delta.PCA.survival%>% filter(Competition == "BRTE"), ae
                             legend.title = element_blank())+
                       geom_vline(xintercept = 0, linetype = "dashed")+
                       geom_hline(yintercept = 0, linetype = "dashed")+
-                      scale_shape_manual(values=c(8, 5, 15, 17, 19))+
                       geom_text(aes(label=Population),hjust=-0.1, vjust=1)+
                       ylim( -6.2, 1)+
                       xlim(-0.85, 0.3)+
@@ -661,7 +713,6 @@ delta_PC2_None <- ggplot(delta.PCA.survival%>% filter(Competition == "None"), ae
                             legend.title = element_blank())+
                       geom_vline(xintercept = 0, linetype = "dashed")+
                       geom_hline(yintercept = 0, linetype = "dashed")+
-                      scale_shape_manual(values=c(8, 5, 15, 17, 19))+
                       geom_text(aes(label=Population),hjust=-0.1, vjust=1)+
                       ylim( -6, 1)+
                       xlim(-0.1, 0.62)+
@@ -680,15 +731,16 @@ delta_PC2_BRTE <- ggplot(delta.PCA.survival%>% filter(Competition == "BRTE"), ae
                             legend.title = element_blank())+
                       geom_vline(xintercept = 0, linetype = "dashed")+
                       geom_hline(yintercept = 0, linetype = "dashed")+
-                      scale_shape_manual(values=c(8, 5, 15, 17, 19))+
                       geom_text(aes(label=Population),hjust=0.9, vjust=1.2)+
                       ylim( -6, 1)+
                       xlim(-0.1, 0.62)+
                       ylab(bquote(Delta~Establishment~Rate))+
                       xlab(bquote(Delta~PC2))
-ggarrange(delta_PC1_None, delta_PC2_None, delta_PC1_BRTE, delta_PC2_BRTE,
-          ncol = 2, nrow = 2, labels = c("None","None", "BRTE", "BRTE"), 
+ggarrange(delta_PC1_None, delta_PC2_None, distance_None, delta_PC1_BRTE, delta_PC2_BRTE, distance_BRTE,
+          ncol = 3, nrow = 2, labels = c("None","None", "None", "BRTE", "BRTE", "BRTE"), 
           label.x = .1, label.y = 0.99)
+
+
 #----------------------------------------------------------#
 # Dispersion and centroid of traits
 # multivariate_difference (codyn) uses a Bray-Curtis dissimilarity matrix to calculate changes in composition (distance between centroids) and dispersion (distance around centroids)
