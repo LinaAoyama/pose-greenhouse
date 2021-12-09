@@ -137,15 +137,15 @@ ggplot(pca.centroids, aes(x = mean_PC1, y = mean_PC2))+
 
 # calculate dispersion within each treatment
 pca.dispersion <- pca_trait_scores_lab %>%
-  group_by(Treatment, Population) %>%
+  group_by(Treatment) %>%
   summarise(dispersion = sqrt((PC1-median(PC1))^2 + (PC2-median(PC2))^2))
 pca.dispersion.summary <- pca.dispersion %>%
-  group_by(Treatment, Population) %>%
+  group_by(Treatment) %>%
   summarise(mean = mean(dispersion),
             se = se(dispersion))
 ggplot(pca.dispersion.summary, aes(x = Treatment, y = mean, fill = Treatment))+
   geom_bar(stat = "identity" , show.legend = FALSE)+
-  facet_wrap(vars(Population), ncol = 5)+
+  #facet_wrap(vars(Population), ncol = 5)+
   theme(text = element_text(size=18),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -155,7 +155,7 @@ ggplot(pca.dispersion.summary, aes(x = Treatment, y = mean, fill = Treatment))+
         axis.title = element_text(size = 15))+
   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
   xlab("Treatment")+
-  ylab("Trait dispersion")+
+  ylab("Trait Dispersion")+
   scale_fill_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))+
   scale_x_discrete(labels=c("BRTE_Dry" = "BD", "BRTE_Wet" = "BW",
                             "None_Dry" = "ND", "None_Wet" = "NW"))
