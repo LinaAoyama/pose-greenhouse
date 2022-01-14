@@ -112,7 +112,7 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
   ylim(-1.6, 1.6)+
   xlab("PC1 (43.0%)")+
   ylab("PC2 (14.4%)")+
-  scale_color_manual(values=c("#FBD947", "#FF8C07",  "#86BBE8","#0240FF"))
+  scale_color_manual(values=c("#FBD947", "#FF8C07",  "#D6AACE","#CE026E"))
 
 #calculate centroids within each treatment
 pca.centroids <- pca_trait_scores_lab %>%
@@ -133,7 +133,7 @@ ggplot(pca.centroids, aes(x = mean_PC1, y = mean_PC2))+
   ylim(-0.7, 0.7)+
   xlab("PC1 (43.0%)")+
   ylab("PC2 (14.4%)")+
-  scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))
+  scale_color_manual(values=c("#FBD947", "#FF9507", "#D6AACE","#CE026E"))
 
 # calculate dispersion within each treatment
 pca.dispersion <- pca_trait_scores_lab %>%
@@ -156,11 +156,41 @@ ggplot(pca.dispersion.summary, aes(x = Treatment, y = mean, fill = Treatment))+
   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
   xlab("Treatment")+
   ylab("Trait Dispersion")+
-  scale_fill_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))+
+  scale_fill_manual(values=c("#FBD947", "#FF9507",  "#D6AACE","#CE026E"))+
   scale_x_discrete(labels=c("BRTE_Dry" = "BD", "BRTE_Wet" = "BW",
                             "None_Dry" = "ND", "None_Wet" = "NW"))
-  
-# # PCA within each population:
+
+#----------------------------------------------------------#
+# Dispersion and centroid of traits
+# multivariate_difference (codyn) uses a Bray-Curtis dissimilarity matrix to calculate changes in composition (distance between centroids) and dispersion (distance around centroids)
+trait_long_select <- trait_long %>%
+  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL")) %>%
+  mutate(value = value+3) #make all z-scores positive by adding 3
+
+multivariate_difference(trait_long_select, 
+                        time.var = NULL,
+                        replicate.var = "PotID",
+                        treatment.var = "Treatment",
+                        species.var = "trait",
+                        abundance.var = "value") #Overall, None-Wet and BRTE-Dry has the largest difference in trait composition and dispersion
+multivariate_difference(trait_long_select, 
+                        time.var = "Population",
+                        replicate.var = "PotID",
+                        treatment.var = "Treatment",
+                        species.var = "trait",
+                        abundance.var = "value",
+                        reference.treatment = "None-Wet") #Reno has the largest difference in trait composition between None-Wet and BRTE-DRY.
+adonis(value~Treatment, data = trait_long_select, perm = 999, method = "euclidean") #PERMANOVA results: Significant treatment effect p = 0.001
+
+treatment <- apply(trait_master[ ,3:4 ] , 1 , paste , collapse = "_" )
+dis <- vegdist(trait_matrix, method = "euclidean")
+mod <- betadisper(dis, group = treatment)
+anova(mod)
+TukeyHSD(mod)
+view(mod$vectors)
+
+# ---------------------------------------------------------------#  
+#  PCA within each population:
 # # Butte Valley
 # trait_Butte <- trait_master %>%
 #   filter(Population == "Butte Valley") %>%
@@ -493,6 +523,8 @@ survival_trait <- inner_join(trait_standard, stemcount) %>%
   #dplyr::select(-BRTE_stem_count) %>%
   drop_na()
 survival_trait$Treatment <- apply(survival_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
+survival_trait$Population <- ordered(as.factor(survival_trait$Population), levels = c("Butte Valley","Steens","EOARC",
+                                                                              "Water Canyon",  "Reno"))
 
 ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
          pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
@@ -507,10 +539,10 @@ ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
         axis.line = element_line(colour = "black"),
         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
         axis.title = element_text(size = 12))+
-  ylab(bquote(italic(P.~secunda)~Establishment~Rate)) +
+  ylab(bquote(Establishment~Rate)) +
   xlab("Trait z-scores")+
-  geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
-  scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))
+  geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.9, se = FALSE)+
+  scale_color_manual(values=c("#FBD947", "#FF9507",  "#D6AACE","#CE026E"))
 
 # ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%filter(Competition == "BRTE") %>%
 #          pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
@@ -530,23 +562,23 @@ ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
 #   #geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
 #   #scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))
 # 
-# ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
-#          pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
-#          filter(trait%in%c("PropF", "SRL")), 
-#        aes(x = value, y = POSE_survival_stem_count/25))+
-#   geom_jitter(aes(col = Treatment))+
-#   facet_wrap(~trait+Population, scale = "free", ncol = 3)+
-#   theme(text = element_text(size=12),
-#         panel.grid.major = element_blank(),
-#         panel.grid.minor = element_blank(),
-#         panel.background = element_blank(),
-#         axis.line = element_line(colour = "black"),
-#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-#         axis.title = element_text(size = 12))+
-#   ylab(bquote(italic(P.~secunda)~Establishment~Rate)) +
-#   xlab("Trait z-scores")+
-#   geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
-#   scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))
+ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
+         pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
+         filter(trait%in%c("Tips")),
+       aes(x = value, y = POSE_survival_stem_count/25))+
+  geom_jitter(aes(col = Treatment))+
+  facet_wrap(~trait+Population, scale = "free", ncol = 5)+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 12))+
+  ylab(bquote(italic(P.~secunda)~Establishment~Rate)) +
+  xlab("Trait z-scores")+
+  geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
+  scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))
 
 # totalbiomass_trait <- trait_standard %>%
 #   select(-TotalBiomass) %>%
@@ -740,254 +772,256 @@ ggarrange(delta_PC1_None, delta_PC2_None, distance_None, delta_PC1_BRTE, delta_P
           ncol = 3, nrow = 2, labels = c("None","None", "None", "BRTE", "BRTE", "BRTE"), 
           label.x = .1, label.y = 0.99)
 
-
-#----------------------------------------------------------#
-# Dispersion and centroid of traits
-# multivariate_difference (codyn) uses a Bray-Curtis dissimilarity matrix to calculate changes in composition (distance between centroids) and dispersion (distance around centroids)
-trait_long_select <- trait_long %>%
-  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL")) %>%
-  mutate(value = value+3) #make all z-scores positive by adding 3
-
-multivariate_difference(trait_long_select, 
-                    time.var = NULL,
-                    replicate.var = "PotID",
-                    treatment.var = "Treatment",
-                    species.var = "trait",
-                    abundance.var = "value") #Overall, None-Wet and BRTE-Dry has the largest difference in trait composition and dispersion
-multivariate_difference(trait_long_select, 
-                        time.var = "Population",
-                        replicate.var = "PotID",
-                        treatment.var = "Treatment",
-                        species.var = "trait",
-                        abundance.var = "value",
-                        reference.treatment = "None-Wet") #Reno has the largest difference in trait composition between None-Wet and BRTE-DRY.
-adonis(value~Treatment, data = trait_long_select, perm = 999, method = "euclidean") #PERMANOVA results: Significant treatment effect p = 0.001
-
-treatment <- apply(trait_master[ ,3:4 ] , 1 , paste , collapse = "_" )
-dis <- vegdist(trait_matrix, method = "euclidean")
-mod <- betadisper(dis, group = treatment)
-anova(mod)
-TukeyHSD(mod)
-view(mod$vectors)
-
 #----------------------------------------------------------#
 # Is trait plasticity correlated with drought tolerance?
+# Delta trait (Dry-Wet) vs delta establishment rate (Dry-Wet) for each trait
+mean_survival_trait <- survival_trait %>%
+  dplyr::select(-TotalBiomass)%>%
+  pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
+  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL", "Length")) %>%
+  group_by(Population, Water, Competition, Treatment, trait) %>%
+  summarise(mean_trait = mean(value),
+            mean_POSE = mean(POSE_survival_stem_count/25))
 
-# Calculate PCA score distance as a metric of plasticity
-plasticity <- pca_trait_scores_lab %>%
-  dplyr::select(Population, Replicate, Competition, Water, PC1, PC2) %>%
-  pivot_wider(names_from = Water, values_from = c(PC1, PC2)) %>%
-  group_by(Population, Replicate, Competition) %>%
-  na.omit()%>%
-  summarise(d_trait = sqrt((PC1_Dry-PC1_Wet)^2 + (PC2_Dry- PC2_Wet)^2))
+delta_survival_trait <- mean_survival_trait %>%
+  group_by(Population, Competition, trait) %>%
+  summarise(delta_trait = abs((mean_trait[Water == "Dry"]-mean_trait[Water == "Wet"])/mean_trait[Water == "Wet"]),
+            delta_est = (mean_POSE[Water == "Dry"]-mean_POSE[Water == "Wet"]))
 
-# Calculate drought tolerance: relative change in survival rate and biomass 
-survival_delta <- growth%>%
-  dplyr::select(Population, Replicate, Water, Competition, POSE_survival_stem_count) %>%
-  mutate(survivalrate = POSE_survival_stem_count/25) %>%
-  dplyr::select(Population, Replicate, Water, Competition, survivalrate) %>%
-  pivot_wider(names_from = Water, values_from = survivalrate) %>%
-  group_by(Population, Replicate, Competition) %>%
-  summarise(survival_delta = (Dry-Wet)/Wet)
-biomass_delta <- biomass_dat %>%
-  filter(Life_stage == "seedling") %>%
-  dplyr::select(Population, Replicate, Water, Competition, TotalBiomass) %>%
-  pivot_wider(names_from = Water, values_from = TotalBiomass) %>%
-  group_by(Population, Replicate, Competition) %>%
-  na.omit()%>%
-  summarise(biomass_delta = (Dry-Wet)/Wet)
-
-# Combine dataframes to plot it
-plastic_combined <- left_join(survival_delta, biomass_delta) %>%
-  left_join(., plasticity) 
-f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta, col = Competition)) +
-  geom_point(aes(col = Competition))+
-  theme(text = element_text(size=12),
+ggplot(delta_survival_trait, aes(x = delta_trait, y = delta_est, col = Competition))+
+  geom_point( size = 3)+
+  theme(text = element_text(size=18),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
         axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~Establishment~Rate)) +
-  xlab("Trait plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5)
-f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta, col = Competition)) +
-  geom_point(aes(col = Competition))+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~Total~Biomass)) +
-  xlab("Trait plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5)
-
-
-# Graph them together
-ggarrange(f1, f2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
-
-# Alternative:
-# Calculate trait plasticity or deviation from None_Wet as control 
-plasticity_v2 <- pca_trait_scores_lab %>%
-  dplyr::select(Population, Replicate, Treatment, PC1, PC2) %>%
-  pivot_wider(names_from = Treatment, values_from = c(PC1, PC2)) %>%
-  group_by(Population, Replicate) %>%
-  na.omit()%>%
-  summarise(None_Dry = sqrt((PC1_None_Dry-PC1_None_Wet)^2 + (PC2_None_Dry- PC2_None_Wet)^2),
-            BRTE_Wet = sqrt((PC1_BRTE_Wet-PC1_None_Wet)^2 + (PC2_BRTE_Wet- PC2_None_Wet)^2),
-            BRTE_Dry = sqrt((PC1_BRTE_Dry-PC1_None_Wet)^2 + (PC2_BRTE_Dry- PC2_None_Wet)^2)) %>%
-  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "d_trait")
-
-ggplot(plasticity_v2, aes(x = Population, y = d_trait, fill = Treatment)) +
-  geom_boxplot()+
-  theme_classic()+
-  scale_fill_manual(values=c("#999999", "#6A0DAD", "#E69F00"))+
-  ylab(bquote(Trait~Plasticity)) 
-
-
-# Calculate stress tolerance: relative change in survival rate and biomass 
-growth$Treatment <- apply(growth[ ,3:4 ] , 1 , paste , collapse = "_" )
-biomass_dat$Treatment <- apply(biomass_dat[ ,3:4 ] , 1 , paste , collapse = "_" )
-survival_delta_v2 <- growth%>%
-  dplyr::select(Population, Replicate, Treatment, POSE_survival_stem_count) %>%
-  mutate(survivalrate = POSE_survival_stem_count/25) %>%
-  dplyr::select(Population, Replicate, Treatment, survivalrate) %>%
-  pivot_wider(names_from = Treatment, values_from = survivalrate) %>%
-  group_by(Population, Replicate) %>%
-  summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
-            BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
-            BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
-  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "survival_delta")
-biomass_delta_v2 <- biomass_dat %>%
-  filter(Life_stage == "seedling") %>%
-  dplyr::select(Population, Replicate, Treatment, TotalBiomass) %>%
-  pivot_wider(names_from = Treatment, values_from = TotalBiomass) %>%
-  group_by(Population, Replicate) %>%
-  na.omit()%>%
-  summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
-            BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
-            BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
-  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "biomass_delta")
-
-# Combine dataframes to plot it
-plastic_combined_v2 <- left_join(survival_delta_v2, biomass_delta_v2) %>%
-  left_join(., plasticity_v2) 
-f1_V2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = survival_delta)) +
-  geom_point(aes(col = Treatment))+facet_grid(cols = vars(Population))+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~Establishment~Rate)) +
-  xlab("Trait plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
-f2_v2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = biomass_delta)) +
-  geom_point(aes(col = Treatment))+facet_grid(cols = vars(Population))+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~Total~Biomass)) +
-  xlab("Trait plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
-
-# Graph them together
-ggarrange(f1_V2, f2_v2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
-
-# Plasticity of PropF and LDMC and relative change in establishment rate and biomass
-trait_master$Treatment <- apply(trait_master[ ,3:4 ] , 1 , paste , collapse = "_" )
-PropF_delta <- trait_master %>%
-  dplyr::select(Population, Replicate, Treatment, PropF) %>%
-  pivot_wider(names_from = Treatment, values_from = PropF) %>%
-  group_by(Population, Replicate) %>%
-  summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
-            BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
-            BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
-  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "PropF_delta")
-
-LDMC_delta <- trait_master %>%
-  dplyr::select(Population, Replicate, Treatment, LDMC) %>%
-  pivot_wider(names_from = Treatment, values_from = LDMC) %>%
-  group_by(Population, Replicate) %>%
-  summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
-            BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
-            BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
-  pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "LDMC_delta")
-
-trait_delta_combined <- left_join(survival_delta_v2, biomass_delta_v2) %>%
-  left_join(., PropF_delta)%>%
-  left_join(., LDMC_delta)
-trait_delta_combined$Population <- ordered(as.factor(trait_delta_combined$Population), levels = c("Butte Valley","Steens","EOARC",
-                                                                                  "Water Canyon",  "Reno"))
-f1_V3 <- ggplot(trait_delta_combined, aes(x = PropF_delta, y = survival_delta)) +
-  geom_jitter(aes(col = Treatment))+
-  facet_grid(cols = vars(Population))+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~Establishment~Rate)) +
-  xlab("PropF plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
-f2_v3 <- ggplot(trait_delta_combined, aes(x = PropF_delta, y = biomass_delta)) +
-  geom_point(aes(col = Treatment))+
-  facet_grid(cols = vars(Population))+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~Total~Biomass)) +
-  xlab("PropF plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
-f3_v3 <- ggplot(trait_delta_combined, aes(x = LDMC_delta, y = survival_delta)) +
-  geom_jitter(aes(col = Treatment))+
-  facet_grid(cols = vars(Population))+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~Establishment~Rate)) +
-  xlab("LDMC plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
-f4_v3 <- ggplot(trait_delta_combined, aes(x = LDMC_delta, y = biomass_delta)) +
-  geom_point(aes(col = Treatment))+
-  facet_grid(cols = vars(Population))+
-  theme(text = element_text(size=12),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-        axis.title = element_text(size = 12))+
-  ylab(bquote(Relative~Change~Total~Biomass)) +
-  xlab("LDMC plasticity")+
-  geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
-  scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
-# Graph them together
-ggarrange(f1_V3, f2_v3, f3_v3, f4_v3, ncol = 2, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)"),
-          font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 15))+
+  facet_wrap(~trait, scale = "free", ncol = 3)+
+  geom_vline(xintercept = 0, linetype = "dashed")+
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  geom_text(aes(label=Population),hjust="inward", vjust="inward", show.legend = FALSE)+
+  #ylim( -1, 0.1)+
+  #xlim(0, 1.1)+
+  ylab(bquote(Drought~Tolerance))+
+  xlab(bquote(Trait~Plasticity))+
+  scale_color_manual(values=c("#FF9507","#CE026E"))+
+  geom_smooth( col = "black",method = "lm",  size=0.9, se = FALSE)
+# # Calculate PCA score distance as a metric of plasticity
+# plasticity <- pca_trait_scores_lab %>%
+#   dplyr::select(Population, Replicate, Competition, Water, PC1, PC2) %>%
+#   pivot_wider(names_from = Water, values_from = c(PC1, PC2)) %>%
+#   group_by(Population, Replicate, Competition) %>%
+#   na.omit()%>%
+#   summarise(d_trait = sqrt((PC1_Dry-PC1_Wet)^2 + (PC2_Dry- PC2_Wet)^2))
+# 
+# # Calculate drought tolerance: relative change in survival rate and biomass 
+# survival_delta <- growth%>%
+#   dplyr::select(Population, Replicate, Water, Competition, POSE_survival_stem_count) %>%
+#   mutate(survivalrate = POSE_survival_stem_count/25) %>%
+#   dplyr::select(Population, Replicate, Water, Competition, survivalrate) %>%
+#   pivot_wider(names_from = Water, values_from = survivalrate) %>%
+#   group_by(Population, Replicate, Competition) %>%
+#   summarise(survival_delta = (Dry-Wet)/Wet)
+# biomass_delta <- biomass_dat %>%
+#   filter(Life_stage == "seedling") %>%
+#   dplyr::select(Population, Replicate, Water, Competition, TotalBiomass) %>%
+#   pivot_wider(names_from = Water, values_from = TotalBiomass) %>%
+#   group_by(Population, Replicate, Competition) %>%
+#   na.omit()%>%
+#   summarise(biomass_delta = (Dry-Wet)/Wet)
+# 
+# # Combine dataframes to plot it
+# plastic_combined <- left_join(survival_delta, biomass_delta) %>%
+#   left_join(., plasticity) 
+# f1 <- ggplot(plastic_combined, aes(x = d_trait, y = survival_delta, col = Competition)) +
+#   geom_point(aes(col = Competition))+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(Relative~Change~Establishment~Rate)) +
+#   xlab("Trait plasticity")+
+#   geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5)
+# f2 <- ggplot(plastic_combined, aes(x = d_trait, y = biomass_delta, col = Competition)) +
+#   geom_point(aes(col = Competition))+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(Relative~Change~Total~Biomass)) +
+#   xlab("Trait plasticity")+
+#   geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5)
+# 
+# 
+# # Graph them together
+# ggarrange(f1, f2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
+#           font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
+# 
+# # Alternative:
+# # Calculate trait plasticity or deviation from None_Wet as control 
+# plasticity_v2 <- pca_trait_scores_lab %>%
+#   dplyr::select(Population, Replicate, Treatment, PC1, PC2) %>%
+#   pivot_wider(names_from = Treatment, values_from = c(PC1, PC2)) %>%
+#   group_by(Population, Replicate) %>%
+#   na.omit()%>%
+#   summarise(None_Dry = sqrt((PC1_None_Dry-PC1_None_Wet)^2 + (PC2_None_Dry- PC2_None_Wet)^2),
+#             BRTE_Wet = sqrt((PC1_BRTE_Wet-PC1_None_Wet)^2 + (PC2_BRTE_Wet- PC2_None_Wet)^2),
+#             BRTE_Dry = sqrt((PC1_BRTE_Dry-PC1_None_Wet)^2 + (PC2_BRTE_Dry- PC2_None_Wet)^2)) %>%
+#   pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "d_trait")
+# 
+# ggplot(plasticity_v2, aes(x = Population, y = d_trait, fill = Treatment)) +
+#   geom_boxplot()+
+#   theme_classic()+
+#   scale_fill_manual(values=c("#999999", "#6A0DAD", "#E69F00"))+
+#   ylab(bquote(Trait~Plasticity)) 
+# 
+# 
+# # Calculate stress tolerance: relative change in survival rate and biomass 
+# growth$Treatment <- apply(growth[ ,3:4 ] , 1 , paste , collapse = "_" )
+# biomass_dat$Treatment <- apply(biomass_dat[ ,3:4 ] , 1 , paste , collapse = "_" )
+# survival_delta_v2 <- growth%>%
+#   dplyr::select(Population, Replicate, Treatment, POSE_survival_stem_count) %>%
+#   mutate(survivalrate = POSE_survival_stem_count/25) %>%
+#   dplyr::select(Population, Replicate, Treatment, survivalrate) %>%
+#   pivot_wider(names_from = Treatment, values_from = survivalrate) %>%
+#   group_by(Population, Replicate) %>%
+#   summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
+#             BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
+#             BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
+#   pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "survival_delta")
+# biomass_delta_v2 <- biomass_dat %>%
+#   filter(Life_stage == "seedling") %>%
+#   dplyr::select(Population, Replicate, Treatment, TotalBiomass) %>%
+#   pivot_wider(names_from = Treatment, values_from = TotalBiomass) %>%
+#   group_by(Population, Replicate) %>%
+#   na.omit()%>%
+#   summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
+#             BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
+#             BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
+#   pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "biomass_delta")
+# 
+# # Combine dataframes to plot it
+# plastic_combined_v2 <- left_join(survival_delta_v2, biomass_delta_v2) %>%
+#   left_join(., plasticity_v2) 
+# f1_V2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = survival_delta)) +
+#   geom_point(aes(col = Treatment))+facet_grid(cols = vars(Population))+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(Relative~Change~Establishment~Rate)) +
+#   xlab("Trait plasticity")+
+#   geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+#   scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+# f2_v2 <- ggplot(plastic_combined_v2, aes(x = d_trait, y = biomass_delta)) +
+#   geom_point(aes(col = Treatment))+facet_grid(cols = vars(Population))+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(Relative~Change~Total~Biomass)) +
+#   xlab("Trait plasticity")+
+#   geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+#   scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+# 
+# # Graph them together
+# ggarrange(f1_V2, f2_v2, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
+#           font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
+# 
+# # Plasticity of PropF and LDMC and relative change in establishment rate and biomass
+# trait_master$Treatment <- apply(trait_master[ ,3:4 ] , 1 , paste , collapse = "_" )
+# PropF_delta <- trait_master %>%
+#   dplyr::select(Population, Replicate, Treatment, PropF) %>%
+#   pivot_wider(names_from = Treatment, values_from = PropF) %>%
+#   group_by(Population, Replicate) %>%
+#   summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
+#             BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
+#             BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
+#   pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "PropF_delta")
+# 
+# LDMC_delta <- trait_master %>%
+#   dplyr::select(Population, Replicate, Treatment, LDMC) %>%
+#   pivot_wider(names_from = Treatment, values_from = LDMC) %>%
+#   group_by(Population, Replicate) %>%
+#   summarise(None_Dry = (None_Dry-None_Wet)/None_Wet,
+#             BRTE_Wet = (BRTE_Wet-None_Wet)/None_Wet,
+#             BRTE_Dry = (BRTE_Dry-None_Wet)/None_Wet) %>%
+#   pivot_longer(cols = None_Dry:BRTE_Dry, names_to = "Treatment", values_to = "LDMC_delta")
+# 
+# trait_delta_combined <- left_join(survival_delta_v2, biomass_delta_v2) %>%
+#   left_join(., PropF_delta)%>%
+#   left_join(., LDMC_delta)
+# trait_delta_combined$Population <- ordered(as.factor(trait_delta_combined$Population), levels = c("Butte Valley","Steens","EOARC",
+#                                                                                   "Water Canyon",  "Reno"))
+# f1_V3 <- ggplot(trait_delta_combined, aes(x = PropF_delta, y = survival_delta)) +
+#   geom_jitter(aes(col = Treatment))+
+#   facet_grid(cols = vars(Population))+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(Relative~Change~Establishment~Rate)) +
+#   xlab("PropF plasticity")+
+#   geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+#   scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+# f2_v3 <- ggplot(trait_delta_combined, aes(x = PropF_delta, y = biomass_delta)) +
+#   geom_point(aes(col = Treatment))+
+#   facet_grid(cols = vars(Population))+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(Relative~Change~Total~Biomass)) +
+#   xlab("PropF plasticity")+
+#   geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+#   scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+# f3_v3 <- ggplot(trait_delta_combined, aes(x = LDMC_delta, y = survival_delta)) +
+#   geom_jitter(aes(col = Treatment))+
+#   facet_grid(cols = vars(Population))+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(Relative~Change~Establishment~Rate)) +
+#   xlab("LDMC plasticity")+
+#   geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+#   scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+# f4_v3 <- ggplot(trait_delta_combined, aes(x = LDMC_delta, y = biomass_delta)) +
+#   geom_point(aes(col = Treatment))+
+#   facet_grid(cols = vars(Population))+
+#   theme(text = element_text(size=12),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
+#         axis.title = element_text(size = 12))+
+#   ylab(bquote(Relative~Change~Total~Biomass)) +
+#   xlab("LDMC plasticity")+
+#   geom_smooth(method = "lm", formula = y~poly(x,2), size=0.5, color = "black")+
+#   scale_color_manual(values=c("#999999", "#6A0DAD", "#E69F00"))
+# # Graph them together
+# ggarrange(f1_V3, f2_v3, f3_v3, f4_v3, ncol = 2, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)"),
+#           font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)

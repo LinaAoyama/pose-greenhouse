@@ -9,6 +9,7 @@ source("data_compiling/compile_demography.R")
 # Packages
 library(tidyverse) #data wrangling
 library(ggplot2) #plot
+library(cowplot) #combine plots
 library(ggpubr) #combine plots
 library(SingleCaseES) #log response ratios
 library(nlme) #linear mixed effects
@@ -276,7 +277,7 @@ fig_establish_None <- ggplot(summary_seedling %>% filter(Competition == "None"),
                   geom_point(position = position_dodge(width = 0.5))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   #ylab(bquote(Establishment~Rate)) +
-                  scale_color_manual(values=c( "#0240FF",  "#86BBE8"))+
+                  scale_color_manual(values=c( "#CE026E", "#D6AACE"))+
                   annotate("text", label = c( "*", "*", "*"), x = c(2, 4, 5), y = 0.6, size = 8)+
                   ylim(0, 0.6)
 fig_establish_BRTE <- ggplot(summary_seedling %>% filter(Competition == "BRTE"), aes(x = Population, y = mean, col = Treatment))+
