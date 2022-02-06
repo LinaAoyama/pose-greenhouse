@@ -526,6 +526,37 @@ survival_trait$Treatment <- apply(survival_trait[ ,3:4 ] , 1 , paste , collapse 
 survival_trait$Population <- ordered(as.factor(survival_trait$Population), levels = c("Butte Valley","Steens","EOARC",
                                                                               "Water Canyon",  "Reno"))
 
+summary(lm(POSE_survival_stem_count ~ Emergence, data = survival_trait%>%filter(Competition == "BRTE"))) #0.2052, 3.393e-05
+summary(lm(POSE_survival_stem_count ~ Emergence, data = survival_trait%>%filter(Competition == "None"))) #0.2052, 3.393e-05
+summary(lm(POSE_survival_stem_count ~ Height, data = survival_trait%>%filter(Competition == "BRTE"))) #NA
+summary(lm(POSE_survival_stem_count ~ Height, data = survival_trait%>%filter(Competition == "None"))) #NA
+summary(lm(POSE_survival_stem_count ~ LDMC, data = survival_trait%>%filter(Competition == "BRTE"))) #0.05798 , 0.02262
+summary(lm(POSE_survival_stem_count ~ LDMC, data = survival_trait%>%filter(Competition == "None"))) #NA
+summary(lm(POSE_survival_stem_count ~ Length, data = survival_trait%>%filter(Competition == "BRTE"))) #0.2079, 2.999e-05
+summary(lm(POSE_survival_stem_count ~ Length, data = survival_trait%>%filter(Competition == "None"))) #0.2079, 1.437e-05
+summary(lm(POSE_survival_stem_count ~ PropF, data = survival_trait%>%filter(Competition == "BRTE"))) #0.4314, 1.678e-10
+summary(lm(POSE_survival_stem_count ~ PropF, data = survival_trait%>%filter(Competition == "None"))) #0.2114, 1.201e-05
+summary(lm(POSE_survival_stem_count ~ RMR, data = survival_trait%>%filter(Competition == "BRTE"))) #0.0881, 0.006208
+summary(lm(POSE_survival_stem_count ~ RMR, data = survival_trait%>%filter(Competition == "None"))) #0.05738, 0.01893
+summary(lm(POSE_survival_stem_count ~ SLA, data = survival_trait%>%filter(Competition == "BRTE"))) #0.05724, 0.02335
+summary(lm(POSE_survival_stem_count ~ SLA, data = survival_trait%>%filter(Competition == "None"))) #NA
+summary(lm(POSE_survival_stem_count ~ SRL, data = survival_trait%>%filter(Competition == "BRTE"))) #0.2617, 2.236e-06
+summary(lm(POSE_survival_stem_count ~ SRL, data = survival_trait%>%filter(Competition == "None"))) #0.2718, 5.031e-07
+summary(lm(POSE_survival_stem_count ~ Tips, data = survival_trait%>%filter(Competition == "BRTE"))) #0.04892, 0.03345
+summary(lm(POSE_survival_stem_count ~ Tips, data = survival_trait%>%filter(Competition == "None"))) #0.06483, 0.0134
+
+ann_text_traits_1 <- data.frame(x = c(2.5, 1.5, 0.9, 0, 0, 3.2, 2, 0.5),
+                               y = 0.8,
+                               label = c("BRTE R2 = 0.20, p < 0.001", "BRTE R2 = 0.05, p = 0.02", "BRTE R2 = 0.21, p < 0.001",
+                                         "BRTE R2 = 0.43, p < 0.001", "BRTE R2 = 0.08, p = 0.006", "BRTE R2 = 0.05, p = 0.02",
+                                         "BRTE R2 = 0.26, p < 0.001", "BRTE R2 = 0.04, p = 0.03"),
+                               trait =  c("Emergence", "LDMC", "Length", "PropF", "RMR", "SLA", "SRL", "Tips"))
+ann_text_traits_2 <- data.frame(x = c(2.5, 0.9, 0, 0, 2, 0.5),
+                                y = 0.7,
+                                label = c("None R2 = 0.20, p < 0.001", "None R2 = 0.05, p < 0.001", "None R2 = 0.21, p < 0.001",
+                                          "None R2 = 0.05, p = 0.01", "None R2 = 0.27, p < 0.001", "None R2 = 0.06, p = 0.01"),
+                                trait =  c("Emergence", "Length", "PropF", "RMR", "SRL", "Tips"))
+
 ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
          pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
          filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL", "Length")), 
@@ -541,8 +572,17 @@ ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
         axis.title = element_text(size = 12))+
   ylab(bquote(Establishment~Rate)) +
   xlab("Trait z-scores")+
-  geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.9, se = FALSE)+
-  scale_color_manual(values=c("#FBD947", "#FF9507",  "#D6AACE","#CE026E"))
+  scale_color_manual(values=c("#FBD947", "#FF9507",  "#D6AACE","#CE026E"))+
+  geom_smooth(data = survival_trait%>%dplyr::select(-TotalBiomass)%>%
+                pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")
+              %>%filter(trait %in% c("Emergence","LDMC", "Length", "PropF", "RMR","SLA", "SRL", "Tips")), 
+              aes(linetype = Competition), col = "black",method = "lm",  size=0.9, se = FALSE)+
+  geom_text(data = ann_text_traits_1, mapping = aes(x = x, y = y, label = label))+
+  geom_text(data = ann_text_traits_2, mapping = aes(x = x, y = y, label = label))#+
+  # geom_smooth(data = survival_trait%>%dplyr::select(-TotalBiomass)%>%
+  #               pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")
+  #             %>%filter(trait %in% c("LDMC", "SLA"), 
+  #              col = "black",method = "lm",  size=0.9, se = FALSE))
 
 # ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%filter(Competition == "BRTE") %>%
 #          pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
@@ -788,8 +828,23 @@ delta_survival_trait <- mean_survival_trait %>%
   summarise(delta_trait = abs((mean_trait[Water == "Dry"]-mean_trait[Water == "Wet"])/mean_trait[Water == "Wet"]),
             delta_est = (mean_POSE[Water == "Dry"]-mean_POSE[Water == "Wet"]))
 
-ggplot(delta_survival_trait, aes(x = delta_trait, y = delta_est, col = Competition))+
-  geom_point( size = 3)+
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "Emergence"))) #*
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "Height"))) #NA
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "LDMC"))) #NA
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "Length"))) #*
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "PropF"))) #NA
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "RMR"))) #NA
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "SLA"))) #NA
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "SRL"))) #NA
+summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "Tips"))) #NA
+
+ann_text_plastic <- data.frame(delta_trait = c(1.5, 0.7),
+                               delta_est = 0.02,
+                               label = c("R2 = 0.36, p = 0.03", "R2 = 0.37, p = 0.03"),
+                       trait =  c("Emergence","Length"))
+
+ggplot(delta_survival_trait, aes(x = delta_trait, y = delta_est))+
+  geom_point(aes(col = Competition), size = 3)+
   theme(text = element_text(size=18),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -800,13 +855,14 @@ ggplot(delta_survival_trait, aes(x = delta_trait, y = delta_est, col = Competiti
   facet_wrap(~trait, scale = "free", ncol = 3)+
   geom_vline(xintercept = 0, linetype = "dashed")+
   geom_hline(yintercept = 0, linetype = "dashed")+
-  geom_text(aes(label=Population),hjust="inward", vjust="inward", show.legend = FALSE)+
+  geom_text(aes(col = Competition, label=Population),hjust="inward", vjust="inward", show.legend = FALSE)+
   #ylim( -1, 0.1)+
   #xlim(0, 1.1)+
   ylab(bquote(Drought~Tolerance))+
   xlab(bquote(Trait~Plasticity))+
   scale_color_manual(values=c("#FF9507","#CE026E"))+
-  geom_smooth( col = "black",method = "lm",  size=0.9, se = FALSE)
+  geom_smooth(data = delta_survival_trait%>%filter(trait %in% c("Emergence", "Length")), col = "black",method = "lm",  size=0.9, se = FALSE)+
+  geom_text( data = ann_text_plastic, mapping = aes(x = delta_trait, y = delta_est, label = label))
 # # Calculate PCA score distance as a metric of plasticity
 # plasticity <- pca_trait_scores_lab %>%
 #   dplyr::select(Population, Replicate, Competition, Water, PC1, PC2) %>%

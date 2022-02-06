@@ -107,7 +107,8 @@ fig_establish <-ggplot(population_seedling, aes(x = Population, y = mean))+
 
 summary(aov(POSE_survival_stem_count ~ Population, data = growth%>%filter(Life_stage == "seedling")))
 TukeyHSD(aov(POSE_survival_stem_count ~ Population, data = growth%>%filter(Life_stage == "seedling")))
-
+summary(aov(POSE_survival_stem_count ~ Water*Competition, data = growth%>%filter(Life_stage == "seedling")))
+TukeyHSD(aov(POSE_survival_stem_count ~ Water*Competition, data = growth%>%filter(Life_stage == "seedling")))
 # Calculate survival rates by treatment and population
 trt_seedling <- growth %>%
   group_by(Treatment, Population) %>%
