@@ -36,38 +36,38 @@ se <- function(x){
 #----------------------------------------------------------#
 # 1. Are adult POSE better at resisting BRTE than seedling POSE?
 
-# Adult vs seedling POSE - adult POSE are better than seedling POSE at limiting BRTE growth but not germination
-# summary(aov(BRTE~Life_stage, data = biomass_dat %>% filter(Competition == "BRTE")))
-# summary(aov(BRTE_stem_count~Life_stage, data = demography %>% filter(Competition == "BRTE")))
-# 
-# fig_biomass <- ggplot(biomass_dat %>% filter(Competition == "BRTE"), aes(y = BRTE, x = Life_stage)) +
-#                     geom_boxplot()+
-#                     theme(text = element_text(size=20),
-#                           panel.grid.major = element_blank(),
-#                           panel.grid.minor = element_blank(),
-#                           panel.background = element_blank(),
-#                           axis.line = element_line(colour = "black"),
-#                           legend.position = "none", 
-#                           axis.title = element_text(size = 18),
-#                           axis.title.x = element_blank())+
-#                     ylab(bquote(italic(B.tectorum)~Biomass~(g)))+
-#                     annotate("text", label = c("***"), y = 0.55, x = 1.5, size = 18)
-# 
-# fig_counts <- ggplot(demography %>% filter(Competition == "BRTE"), aes(y = BRTE_stem_count/50, x = Life_stage))+
-#                   geom_boxplot()+
-#                   theme(text = element_text(size=20),
-#                         panel.grid.major = element_blank(),
-#                         panel.grid.minor = element_blank(),
-#                         panel.background = element_blank(),
-#                         axis.line = element_line(colour = "black"),
-#                         legend.position = "none", 
-#                         axis.title = element_text(size = 18),
-#                         axis.title.x = element_blank())+
-#                   ylab(bquote(italic(B.tectorum)~Germination~Rate))+
-#                   annotate("text", label = c("NA"), y = 0.95, x = 1.5, size = 10)
-# 
-# ggarrange( fig_biomass, fig_counts, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
-#            font.label = list(size = 18))
+#Adult vs seedling POSE - adult POSE are better than seedling POSE at limiting BRTE growth but not germination
+summary(aov(BRTE~Life_stage, data = biomass_dat %>% filter(Competition == "BRTE")))
+summary(aov(BRTE_stem_count~Life_stage, data = demography %>% filter(Competition == "BRTE")))
+
+fig_biomass <- ggplot(biomass_dat %>% filter(Competition == "BRTE"), aes(y = BRTE, x = Life_stage)) +
+                    geom_boxplot()+
+                    theme(text = element_text(size=20),
+                          panel.grid.major = element_blank(),
+                          panel.grid.minor = element_blank(),
+                          panel.background = element_blank(),
+                          axis.line = element_line(colour = "black"),
+                          legend.position = "none",
+                          axis.title = element_text(size = 18),
+                          axis.title.x = element_blank())+
+                    ylab(bquote(italic(B.tectorum)~Biomass~(g)))+
+                    annotate("text", label = c("***"), y = 0.55, x = 1.5, size = 18)
+
+fig_counts <- ggplot(demography %>% filter(Competition == "BRTE"), aes(y = BRTE_stem_count/50, x = Life_stage))+
+                  geom_boxplot()+
+                  theme(text = element_text(size=20),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        axis.line = element_line(colour = "black"),
+                        legend.position = "none",
+                        axis.title = element_text(size = 18),
+                        axis.title.x = element_blank())+
+                  ylab(bquote(italic(B.tectorum)~Germination~Rate))+
+                  annotate("text", label = c("NA"), y = 0.95, x = 1.5, size = 10)
+
+ggarrange( fig_biomass, fig_counts, ncol = 2, nrow = 1, labels = c("(a)", "(b)"),
+           font.label = list(size = 18))
 
 #-----------------------------------------------------------#
 # 2. Are there any differences in drought responses of seedling POSE by population?
@@ -110,97 +110,99 @@ TukeyHSD(aov(POSE_survival_stem_count ~ Population, data = growth%>%filter(Life_
 summary(aov(POSE_survival_stem_count ~ Water*Competition, data = growth%>%filter(Life_stage == "seedling")))
 TukeyHSD(aov(POSE_survival_stem_count ~ Water*Competition, data = growth%>%filter(Life_stage == "seedling")))
 # Calculate survival rates by treatment and population
-trt_seedling <- growth %>%
-  group_by(Treatment, Population) %>%
-  summarise(mean = mean(POSE_survival_stem_count/25),
-            se = se(POSE_survival_stem_count/25))
-
-fig_establish_trt <-ggplot(trt_seedling, aes(x = Population, y = mean, col = Treatment))+
-                      theme(text = element_text(size=15),
-                            panel.grid.major = element_blank(),
-                            panel.grid.minor = element_blank(),
-                            panel.background = element_blank(),
-                            axis.line = element_line(colour = "black"),
-                            legend.position = "right", 
-                            axis.title = element_text(size = 15),
-                            axis.title.x = element_blank())+
-                      geom_hline(yintercept = c(0.2, 0.4, 0.6), color = "#cccccc")+
-                      geom_point(position = position_dodge(width = 0.5))+
-                      ylab(bquote(Establishment~Rate))+
-                      geom_errorbar(aes(ymin = mean-se, ymax = mean+se, col = Treatment),width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-                      annotate("text", label = c("*", "*", "**"), x = c(1.9, 3.9, 5), y = 0.6, size = 8)+
-                      scale_color_manual(values=c("#0240FF",  "#86BBE8",  "#FF8C07", "#FBD947"))+
-                      ylim(0, 0.6)
-
-# # Calculate mean biomass by population
-# population_biomass <- biomass_dat %>%
-#   group_by(Population) %>%
-#   summarise(mean = mean(TotalBiomass),
-#             se = se(TotalBiomass))
+# trt_seedling <- growth %>%
+#   group_by(Treatment, Population) %>%
+#   summarise(mean = mean(POSE_survival_stem_count/25),
+#             se = se(POSE_survival_stem_count/25))
 # 
-# fig_biomass <-ggplot(population_biomass, aes(x = Population, y = mean))+
-#   theme(text = element_text(size=15),
-#         panel.grid.major = element_blank(),
-#         panel.grid.minor = element_blank(),
-#         panel.background = element_blank(),
-#         axis.line = element_line(colour = "black"),
-#         legend.position = "none", 
-#         axis.title = element_text(size = 15),
-#         axis.title.x = element_blank())+
-#   geom_point()+
-#   ylab(bquote(Total~Biomass~(g)))+
-#   geom_errorbar(aes(ymin = mean-se, ymax = mean+se),width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-#   ylim(0, 0.3)
-# 
-# summary(aov(TotalBiomass ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")))
-# TukeyHSD(aov(TotalBiomass ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")))
+# fig_establish_trt <-ggplot(trt_seedling, aes(x = Population, y = mean, col = Treatment))+
+#                       theme(text = element_text(size=15),
+#                             panel.grid.major = element_blank(),
+#                             panel.grid.minor = element_blank(),
+#                             panel.background = element_blank(),
+#                             axis.line = element_line(colour = "black"),
+#                             legend.position = "right", 
+#                             axis.title = element_text(size = 15),
+#                             axis.title.x = element_blank())+
+#                       geom_hline(yintercept = c(0.2, 0.4, 0.6), color = "#cccccc")+
+#                       geom_point(position = position_dodge(width = 0.5))+
+#                       ylab(bquote(Establishment~Rate))+
+#                       geom_errorbar(aes(ymin = mean-se, ymax = mean+se, col = Treatment),width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+#                       annotate("text", label = c("*", "*", "**"), x = c(1.9, 3.9, 5), y = 0.6, size = 8)+
+#                       scale_color_manual(values=c("#0240FF",  "#86BBE8",  "#FF8C07", "#FBD947"))+
+#                       ylim(0, 0.6)
 
-# Calculate POSE's drought response by BRTE treatment
-# Log-response ratios of survival rate
-LRR_seedlings_None <- rbind(LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "Butte Valley")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "None")%>%filter(Population == "Butte Valley")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
-                           LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "Steens")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "None")%>%filter(Population == "Steens")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
-                           LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "EOARC")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "None")%>%filter(Population == "EOARC")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
-                           LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "Water Canyon")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "None")%>%filter(Population == "Water Canyon")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
-                           LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "Reno")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "None")%>%filter(Population == "Reno")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count))) %>%
-  mutate(Population = c("Butte Valley", "Steens", "EOARC", "Water Canyon", "Reno"),
-         Competition = "None")
-LRR_seedlings_BRTE <- rbind(LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Butte Valley")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Butte Valley")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
-                           LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Steens")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Steens")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
-                           LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "EOARC")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "EOARC")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
-                           LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Water Canyon")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Water Canyon")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
-                           LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Reno")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
-                                B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Reno")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count))) %>%
-  mutate(Population = c("Butte Valley", "Steens", "EOARC", 
-                        "Water Canyon", "Reno"),
-         Competition = "BRTE")
-LRR_seedlings <- rbind(LRR_seedlings_None, LRR_seedlings_BRTE)
-LRR_seedlings$Population <- ordered(as.factor(LRR_seedlings$Population), levels = c("Butte Valley","Steens","EOARC", 
-                                                                                    "Water Canyon",  "Reno"))
-fig_establish_DR <- ggplot(LRR_seedlings, aes(x = Population, y = Est, col = Competition))+
-  geom_point(position = position_dodge(width = 0.5))+
-  geom_errorbar(aes(ymin = Est-SE, ymax = Est+SE), width = 0.2, alpha = 0.9, size = 1, position = position_dodge(width = 0.5))+
+# Calculate mean biomass by population
+population_biomass <- biomass_dat %>%
+  group_by(Population) %>%
+  summarise(mean = mean(TotalBiomass),
+            se = se(TotalBiomass))
+
+fig_biomass <-ggplot(population_biomass, aes(x = Population, y = mean))+
   theme(text = element_text(size=15),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
         axis.line = element_line(colour = "black"),
-        legend.position = "right", 
-        legend.title = element_blank(),
-        axis.title = element_text(size = 15))+
-  ylab(bquote(LRR~Establishment~Rate))+
-  geom_hline(yintercept = 0, linetype = "dashed")+
-  scale_color_manual(name = "Competition Treatment", values = c( "#FF8C07", "#0240FF"))+
-  annotate("text", label = c("*", "*"), x = c(2, 4), y = 0.5, size = 8)+
-  ylim(-1.5, 0.7)
+        axis.title = element_text(size = 15),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 90))+
+  geom_hline(yintercept = c(0, 0.1, 0.3, 0.5), color = "#cccccc")+ 
+  geom_point()+
+  scale_y_log10(limits = c(0.09,0.6))+
+  ylab(bquote(log(Total~Biomass)~(g)))+
+  geom_errorbar(aes(ymin = mean-se, ymax = mean+se),width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))
+  #ylim(0, 0.3)
+
+summary(aov(TotalBiomass ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")))
+TukeyHSD(aov(TotalBiomass ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")))
+
+# Calculate POSE's drought response by BRTE treatment
+# # Log-response ratios of survival rate
+# LRR_seedlings_None <- rbind(LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "Butte Valley")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "None")%>%filter(Population == "Butte Valley")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
+#                            LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "Steens")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "None")%>%filter(Population == "Steens")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
+#                            LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "EOARC")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "None")%>%filter(Population == "EOARC")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
+#                            LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "Water Canyon")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "None")%>%filter(Population == "Water Canyon")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
+#                            LRRd(A_data = growth%>%filter(Competition == "None")%>%filter(Population == "Reno")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "None")%>%filter(Population == "Reno")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count))) %>%
+#   mutate(Population = c("Butte Valley", "Steens", "EOARC", "Water Canyon", "Reno"),
+#          Competition = "None")
+# LRR_seedlings_BRTE <- rbind(LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Butte Valley")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Butte Valley")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
+#                            LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Steens")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Steens")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
+#                            LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "EOARC")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "EOARC")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
+#                            LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Water Canyon")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Water Canyon")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count)),
+#                            LRRd(A_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Reno")%>%filter(Water == "Wet")%>%dplyr::select(POSE_survival_stem_count), 
+#                                 B_data = growth%>%filter(Competition == "BRTE")%>%filter(Population == "Reno")%>%filter(Water == "Dry")%>%dplyr::select(POSE_survival_stem_count))) %>%
+#   mutate(Population = c("Butte Valley", "Steens", "EOARC", 
+#                         "Water Canyon", "Reno"),
+#          Competition = "BRTE")
+# LRR_seedlings <- rbind(LRR_seedlings_None, LRR_seedlings_BRTE)
+# LRR_seedlings$Population <- ordered(as.factor(LRR_seedlings$Population), levels = c("Butte Valley","Steens","EOARC", 
+#                                                                                     "Water Canyon",  "Reno"))
+# fig_establish_DR <- ggplot(LRR_seedlings, aes(x = Population, y = Est, col = Competition))+
+#   geom_point(position = position_dodge(width = 0.5))+
+#   geom_errorbar(aes(ymin = Est-SE, ymax = Est+SE), width = 0.2, alpha = 0.9, size = 1, position = position_dodge(width = 0.5))+
+#   theme(text = element_text(size=15),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         panel.background = element_blank(),
+#         axis.line = element_line(colour = "black"),
+#         legend.position = "right", 
+#         legend.title = element_blank(),
+#         axis.title = element_text(size = 15))+
+#   ylab(bquote(LRR~Establishment~Rate))+
+#   geom_hline(yintercept = 0, linetype = "dashed")+
+#   scale_color_manual(name = "Competition Treatment", values = c( "#FF8C07", "#0240FF"))+
+#   annotate("text", label = c("*", "*"), x = c(2, 4), y = 0.5, size = 8)+
+#   ylim(-1.5, 0.7)
 
 # # Log-response ratios of biomass
 # LRR_biomass_None <- rbind(LRRd(A_data = biomass_dat%>%filter(Competition == "None")%>%filter(Population == "Butte Valley")%>%filter(Water == "Wet")%>%dplyr::select(TotalBiomass), 
@@ -253,15 +255,15 @@ summary_seedling <- growth %>%
   summarise(mean = mean(POSE_survival_stem_count/25),
               se = se(POSE_survival_stem_count/25))
 
-# # Calculate mean total biomass by treatment and pop
-# summary_biomass <- biomass_dat %>%
-#   mutate(root_shoot_ratio = Root_Weight_g/POSE) %>%
-#   dplyr::select(PotID, Population, Water, Competition, Treatment, TotalBiomass, root_shoot_ratio) %>%
-#   drop_na()%>%
-#   group_by(Population, Water, Competition, Treatment) %>%
-#   summarise(mean = mean(TotalBiomass), se = se(TotalBiomass),
-#             mean_ratio = mean(root_shoot_ratio), se_ratio = se(root_shoot_ratio))
-# 
+# Calculate mean total biomass by treatment and pop
+summary_biomass <- biomass_dat %>%
+  mutate(root_shoot_ratio = Root_Weight_g/POSE) %>%
+  dplyr::select(PotID, Population, Water, Competition, Treatment, TotalBiomass, root_shoot_ratio) %>%
+  drop_na()%>%
+  group_by(Population, Water, Competition, Treatment) %>%
+  summarise(mean = mean(TotalBiomass), se = se(TotalBiomass),
+            mean_ratio = mean(root_shoot_ratio), se_ratio = se(root_shoot_ratio))
+
 # seedling POSE survival rate by population
 fig_establish_None <- ggplot(summary_seedling %>% filter(Competition == "None"), aes(x = Population, y = mean, col = Treatment))+
                   theme(text = element_text(size=15),
@@ -273,6 +275,7 @@ fig_establish_None <- ggplot(summary_seedling %>% filter(Competition == "None"),
                         legend.title = element_blank(),
                         axis.title = element_text(size = 15),
                         axis.title.y = element_blank(),
+                        axis.title.x = element_blank(),
                         axis.text.x = element_text(angle = 90))+
                   geom_hline(yintercept = c(0.2, 0.4, 0.6), color = "#cccccc")+
                   geom_point(position = position_dodge(width = 0.5))+
@@ -309,64 +312,82 @@ TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_s
 TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_stage == "seedling") %>%filter(Population == "Reno")))
 summary(lme(POSE_survival_stem_count ~ Treatment*Population, random = ~ 1|Replicate, data = growth))
 
-# # seedling POSE total biomass by population
-# fig_biomass_None <- ggplot(summary_biomass%>% filter(Competition == "None"), aes(x = Population, y = mean, col = Treatment)) +
-#                         theme(text = element_text(size=15),
-#                         panel.grid.major = element_blank(),
-#                         panel.grid.minor = element_blank(),
-#                         panel.background = element_blank(),
-#                         axis.line = element_line(colour = "black"),
-#                         legend.position = "none", 
-#                         axis.title = element_text(size = 15))+
-#                   geom_point(position = position_dodge(width = 0.5))+
-#                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-#                   scale_y_log10()+
-#                   ylab(bquote(Total~Biomass~(g))) +
-#                   scale_color_manual(values=c("#56B4E9","#E69F00" ))
-# fig_biomass_BRTE <- ggplot(summary_biomass%>% filter(Competition == "BRTE"), aes(x = Population, y = mean, col = Treatment)) +
-#   theme(text = element_text(size=15),
-#         panel.grid.major = element_blank(),
-#         panel.grid.minor = element_blank(),
-#         panel.background = element_blank(),
-#         axis.line = element_line(colour = "black"),
-#         legend.position = "none", 
-#         axis.title = element_text(size = 15))+
-#   geom_point(position = position_dodge(width = 0.5))+
-#   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-#   scale_y_log10()+
-#   ylab(bquote(Total~Biomass~(g))) +
-#   scale_color_manual(values=c("#6A0DAD", "#999999" ))
+# seedling POSE total biomass by population
+fig_biomass_None <- ggplot(summary_biomass%>% filter(Competition == "None"), aes(x = Population, y = mean, col = as.factor(Treatment))) +
+                    theme(text = element_text(size=15),
+                        panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        axis.line = element_line(colour = "black"),
+                        legend.position = "top",
+                        legend.title = element_blank(),
+                        axis.title = element_text(size = 15),
+                        axis.title.y = element_blank(),
+                        #axis.title.x = element_blank(),
+                        axis.text.x = element_text(angle = 90))+
+                  geom_hline(yintercept = c(0, 0.1, 0.3, 0.5), color = "#cccccc")+
+                  geom_point(position = position_dodge(width = 0.5))+
+                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+                  scale_y_log10(limits = c(0.09,0.6))+
+                  ylab(bquote(Total~Biomass~(g))) +
+                  annotate("text", label = c( "*", "*", "*",  "*", "*"), x = c(1, 2, 3, 4, 5), y = 0.6, size = 8)+
+                  scale_color_manual(values=c( "#CE026E", "#D6AACE"))
+fig_biomass_BRTE <- ggplot(summary_biomass%>% filter(Competition == "BRTE"), aes(x = Population, y = mean, col = Treatment)) +
+  theme(text = element_text(size=15),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = "top",
+        legend.title = element_blank(),
+        axis.title = element_text(size = 15),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 90))+
+  geom_hline(yintercept = c(0.003, 0.005, 0.01), color = "#cccccc")+
+  geom_point(position = position_dodge(width = 0.5))+
+  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+  scale_y_log10()+
+  ylab(bquote(Total~Biomass~(g))) +
+  annotate("text", label = c( "*"), x = c( 5), y = 0.023, size = 8)+
+  scale_color_manual(values=c( "#FF8C07", "#FBD947"))
+
+# Stats for interaction of treatment on POSE biomass
+summary(aov(POSE ~ Water*Competition, data = biomass_dat%>%filter(Life_stage == "seedling")))  #sig treatment differences but no pop or interaction
+summary(lme(POSE ~ Treatment*Population, random = ~ 1|Replicate, data = biomass_dat%>%filter(Life_stage == "seedling")))
+
+# Stats for trt differences in POSE biomass
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "None")%>%filter(Population == "Butte Valley")))
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "None")%>%filter(Population == "Steens")))
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "None")%>%filter(Population == "EOARC")))
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "None")%>%filter(Population == "Water Canyon")))
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "None")%>%filter(Population == "Reno")))
+
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "BRTE")%>%filter(Population == "Butte Valley")))
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "BRTE")%>%filter(Population == "Steens")))
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "BRTE")%>%filter(Population == "EOARC")))
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "BRTE")%>%filter(Population == "Water Canyon")))
+TukeyHSD(aov(POSE ~ Water, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Competition == "BRTE")%>%filter(Population == "Reno")))
 
 # Graph them together
-plot_grid(fig_establish, fig_establish_None,   fig_establish_BRTE,  
-          ncol = 3, nrow = 1, labels = c("(a)", "(b)", "(c)"),
+plot_grid(fig_establish, fig_establish_None,   fig_establish_BRTE, fig_biomass, fig_biomass_None, fig_biomass_BRTE, 
+          ncol = 3, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)", "(e)", "(f)"),
           font.label = list(size = 15), axis = "bt", heights = c(1,1,1), align = "h")
 
-# 
-# # Stats for interaction of pop and treatment on POSE biomass 
-# summary(aov(POSE ~ Treatment*Population, data = biomass_dat%>%filter(Life_stage == "seedling")))  #sig treatment differences but no pop or interaction
-# summary(lme(POSE ~ Treatment*Population, random = ~ 1|Replicate, data = biomass_dat%>%filter(Life_stage == "seedling")))
-# 
-# # Stats for pop differences
-# TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "BRTE-Dry")))
-# TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "BRTE-Wet")))
-# TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "None-Dry")))
-# TukeyHSD(aov(POSE ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")%>%filter(Treatment == "None-Wet")))
-# 
 # # seedling POSE root to shoot ratio by population
-# fig_ratio <- ggplot(summary_biomass, aes(x = Population, y = mean_ratio, col = Treatment)) +
-#   theme(text = element_text(size=15),
-#         panel.grid.major = element_blank(),
-#         panel.grid.minor = element_blank(),
-#         panel.background = element_blank(),
-#         axis.line = element_line(colour = "black"),
-#         legend.position = c(0.2, 0.8), 
-#         axis.title = element_text(size = 15))+
-#   geom_point(position = position_dodge(width = 0.5))+
-#   geom_errorbar(aes(ymin = mean_ratio-se_ratio, ymax = mean_ratio+se_ratio), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-#   scale_y_log10()+
-#   ylab(bquote(Root/Shoot~Ratio)) +
-#   scale_color_manual(values=c("#56B4E9","#E69F00", "#6A0DAD", "#999999" ))
+fig_ratio <- ggplot(summary_biomass, aes(x = Population, y = mean_ratio, col = Treatment)) +
+  theme(text = element_text(size=15),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.position = c(0.8, 0.8),
+        axis.title = element_text(size = 15))+
+  geom_point(position = position_dodge(width = 0.5))+
+  geom_errorbar(aes(ymin = mean_ratio-se_ratio, ymax = mean_ratio+se_ratio), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+  scale_y_log10()+
+  ylab(bquote(Root/Shoot~Ratio)) +
+  scale_color_manual(values=c("#CE026E", "#D6AACE", "#FF8C07", "#FBD947" ))
 
 # # Seedling mortality
 # summary_mortality <- growth %>%

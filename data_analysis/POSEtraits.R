@@ -501,14 +501,14 @@ f_AG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("Emergence", "Height", "
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
                 theme_bw()+
-                scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF" ))+
+                scale_color_manual(values=c("#CE026E","#D6AACE","#FF9507","#FBD947" ))+
                 ylab("")
 f_BG_trait <-ggplot(mean_trait_long%>%filter(trait%in%c("RMR",  "Tips", "PropF", "SRL")), aes(x = Population, y = mean, col = Treatment)) +
                 geom_point(position = position_dodge(width = 0.5))+
                 geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                 facet_wrap(~trait, scales = "free", ncol = 2)+
                 theme_bw()+
-                scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF" ))+
+                scale_color_manual(values=c("#CE026E","#D6AACE","#FF9507","#FBD947"))+
                 ylab("")
 
 # Graph them together
@@ -620,28 +620,29 @@ ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
   geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
   scale_color_manual(values=c("#FBD947", "#FF9507",  "#86BBE8","#0240FF"))
 
-# totalbiomass_trait <- trait_standard %>%
-#   select(-TotalBiomass) %>%
-#   cbind(., trait_master[,16])
-# totalbiomass_trait$Treatment <- apply(totalbiomass_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
-# 
-# ggplot(totalbiomass_trait %>%
-#   pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value") %>%
-#   filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL",  "Length")),
-#   aes(x = value, y = TotalBiomass))+
-#   geom_jitter(aes(col = Treatment))+
-#   facet_wrap(~trait, scale = "free", ncol = 3)+
-#   theme(text = element_text(size=12),
-#         panel.grid.major = element_blank(),
-#         panel.grid.minor = element_blank(),
-#         panel.background = element_blank(),
-#         axis.line = element_line(colour = "black"),
-#         panel.border = element_rect(colour = "black", fill = NA, size = 1.2), 
-#         axis.title = element_text(size = 12))+
-#   ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
-#   xlab("Trait z-scores")+
-#   geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
-#   scale_color_manual(values=c("#FBD947", "#FDAB02",  "#86BBE8","#0278E0"))
+totalbiomass_trait <- trait_standard %>%
+  select(-TotalBiomass) %>%
+  cbind(., trait_master[,16])
+totalbiomass_trait$Treatment <- apply(totalbiomass_trait[ ,3:4 ] , 1 , paste , collapse = "_" )
+
+ggplot(totalbiomass_trait %>%
+  pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value") %>%
+  filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL",  "Length"))%>%
+    filter(Treatment%in%c("None_Dry", "None_Wet")),
+  aes(x = value, y = TotalBiomass))+
+  geom_jitter(aes(col = Treatment))+
+  facet_wrap(~trait, scale = "free", ncol = 3)+
+  theme(text = element_text(size=12),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
+        axis.title = element_text(size = 12))+
+  ylab(bquote(italic(P.~secunda)~Total~Biomass~(g))) +
+  xlab("Trait z-scores")+
+  geom_smooth(aes(linetype = Competition), col = "black",method = "lm",  size=0.5)+
+  scale_color_manual(values=c("#FBD947", "#FDAB02",   "#D6AACE","#CE026E"))
 
 #----------------------------------------------------------#
 # Does trait shift hurt or help POSE survival?
@@ -838,10 +839,12 @@ summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait =
 summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "SRL"))) #NA
 summary(lm(delta_est ~ delta_trait, data = delta_survival_trait%>%filter(trait == "Tips"))) #NA
 
-ann_text_plastic <- data.frame(delta_trait = c(1.5, 0.7),
+ann_text_plastic <- data.frame(delta_trait = c(1.4, 0.6),
                                delta_est = 0.02,
                                label = c("R2 = 0.36, p = 0.03", "R2 = 0.37, p = 0.03"),
                        trait =  c("Emergence","Length"))
+library(plyr)
+delta_survival_trait$Population <- revalue(delta_survival_trait$Population, c("Butte Valley"="B", "Steens"="S", "EOARC"="E", "Water Canyon"="W", "Reno"="R"))
 
 ggplot(delta_survival_trait, aes(x = delta_trait, y = delta_est))+
   geom_point(aes(col = Competition), size = 3)+
@@ -855,7 +858,7 @@ ggplot(delta_survival_trait, aes(x = delta_trait, y = delta_est))+
   facet_wrap(~trait, scale = "free", ncol = 3)+
   geom_vline(xintercept = 0, linetype = "dashed")+
   geom_hline(yintercept = 0, linetype = "dashed")+
-  geom_text(aes(col = Competition, label=Population),hjust="inward", vjust="inward", show.legend = FALSE)+
+  geom_text(aes(col = Competition, label=Population),hjust="inward", vjust="inward",show.legend = FALSE)+
   #ylim( -1, 0.1)+
   #xlim(0, 1.1)+
   ylab(bquote(Drought~Tolerance))+
