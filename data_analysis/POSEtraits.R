@@ -20,6 +20,7 @@ library(vegan) #pca
 library(corrplot) #correlation matrix
 library(dplyr)
 library(codyn)
+library(ggrepel)
 
 # Prep data
 root_traits <- full_join(rootbiomass, root) %>%
@@ -104,10 +105,10 @@ ggplot(pca_trait_scores_lab, aes(x = PC1, y = PC2))+
         panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
         axis.title = element_text(size = 15))+
   scale_shape_manual(values=c(8, 5, 15, 17, 19))+
-  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1, yend = PC2),
+  geom_segment(data = envout, aes(x = 0, y = 0, xend = PC1*0.9, yend = PC2*0.9),
                alpha = 0.5, size = 1, colour = "grey30") +
-  geom_text(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
-            fontface = "bold", label = row.names(envout), size = 5)+
+  geom_text_repel(data = envout, aes(x = PC1, y = PC2), colour = "grey30",
+            fontface = "bold", label = row.names(envout), size = 5, force = 0.02)+
   xlim(-2, 2)+
   ylim(-1.6, 1.6)+
   xlab("PC1 (43.0%)")+
