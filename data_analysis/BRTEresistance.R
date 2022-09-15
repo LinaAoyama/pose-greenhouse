@@ -101,7 +101,7 @@ fig_establish <-ggplot(population_seedling, aes(x = Population, y = mean))+
                   geom_point()+
                   ylab(bquote(Establishment~Rate))+
                   geom_errorbar(aes(ymin = mean-se, ymax = mean+se),width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-                  annotate("text", label = c("*"), x = c(1), y = 0.6, size = 8)+
+                  annotate("text", label = c("a", "b", "b", "b", "b"), x = c(1, 2, 3, 4, 5), y = 0.5, size = 4)+
                   ylim(0, 0.7)
 
 
@@ -147,12 +147,13 @@ fig_biomass <-ggplot(population_biomass, aes(x = Population, y = mean))+
         axis.title = element_text(size = 15),
         axis.title.x = element_blank(),
         axis.text.x = element_text(angle = 90))+
-  geom_hline(yintercept = c(0, 0.1, 0.3, 0.5), color = "#cccccc")+ 
+  geom_hline(yintercept = c(0.2, 0.4, 0.6), color = "#cccccc")+ 
   geom_point()+
-  scale_y_log10(limits = c(0.09,0.8))+
-  ylab(bquote(log(Total~Biomass)~(g)))+
-  geom_errorbar(aes(ymin = mean-se, ymax = mean+se),width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))
-  #ylim(0, 0.3)
+  #scale_y_log10(limits = c(0.09,0.8))+
+  annotate("text", label = c("a", "a", "a", "a", "a"), x = c(1, 2, 3, 4, 5), y = 0.5, size = 4)+
+  ylab(bquote(Total~Biomass~(g)))+
+  geom_errorbar(aes(ymin = mean-se, ymax = mean+se),width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+  ylim(0, 0.7)
 
 summary(aov(TotalBiomass ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")))
 TukeyHSD(aov(TotalBiomass ~ Population, data = biomass_dat%>%filter(Life_stage == "seedling")))
@@ -265,7 +266,7 @@ summary_biomass <- biomass_dat %>%
             mean_ratio = mean(root_shoot_ratio), se_ratio = se(root_shoot_ratio))
 
 # seedling POSE survival rate by population
-fig_establish_None <- ggplot(summary_seedling %>% filter(Competition == "None"), aes(x = Population, y = mean, col = Treatment))+
+fig_establish_None <- ggplot(summary_seedling %>% filter(Competition == "None"), aes(x = Population, y = mean))+
                   theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
                         panel.grid.minor = element_blank(),
@@ -278,13 +279,18 @@ fig_establish_None <- ggplot(summary_seedling %>% filter(Competition == "None"),
                         axis.title.x = element_blank(),
                         axis.text.x = element_blank())+
                   geom_hline(yintercept = c(0.2, 0.4, 0.6), color = "#cccccc")+
-                  geom_point(position = position_dodge(width = 0.5))+
-                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+                  geom_point(aes(col = Treatment), position = position_dodge(width = 0.5))+
+                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se, col = Treatment), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   #ylab(bquote(Establishment~Rate)) +
                   scale_color_manual(values=c( "#CE026E", "#D6AACE"))+
-                  annotate("text", label = c( "*", "*", "*"), x = c(2, 4, 5), y = 0.6, size = 8)+
-                  ylim(0, 0.7)
-fig_establish_BRTE <- ggplot(summary_seedling %>% filter(Competition == "BRTE"), aes(x = Population, y = mean, col = Treatment))+
+                  #annotate("text", label = c( "*", "*", "*"), x = c(2, 4, 5), y = 0.6, size = 8)+
+                  ylim(0, 0.7)+
+                  geom_bracket(
+                    xmin = c(1.8, 3.8, 4.8), xmax = c(2.2, 4.2, 5.2),
+                    y.position = c(0.6, 0.6, 0.6), label = c("*", "*", "*"),
+                    tip.length = 0.01, label.size = 6
+                  )
+fig_establish_BRTE <- ggplot(summary_seedling %>% filter(Competition == "BRTE"), aes(x = Population, y = mean))+
                   theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
                         panel.grid.minor = element_blank(),
@@ -297,12 +303,17 @@ fig_establish_BRTE <- ggplot(summary_seedling %>% filter(Competition == "BRTE"),
                         axis.title.x = element_blank(),
                         axis.text.x = element_blank())+
                   geom_hline(yintercept = c(0.2, 0.4, 0.6), color = "#cccccc")+
-                  geom_point(position = position_dodge(width = 0.5))+
-                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+                  geom_point(aes(col = Treatment), position = position_dodge(width = 0.5))+
+                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se, col = Treatment), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
                   #ylab(bquote(Establishment~Rate)) +
                   scale_color_manual(values=c( "#FF8C07", "#FBD947"))+
-                  annotate("text", label = c( "*"), x = c( 5), y = 0.6, size = 8)+
-                  ylim(0, 0.7)
+                  #annotate("text", label = c( "*"), x = c( 5), y = 0.6, size = 8)+
+                  ylim(0, 0.7)+
+                  geom_bracket(
+                            xmin = c(4.8), xmax = c(5.2),
+                            y.position = c(0.6), label = c("*"),
+                            tip.length = 0.01, label.size = 6
+                  )
 # Stats for POSE survival rate
 summary(aov(POSE_survival_stem_count ~ Population*Treatment, data = growth)) #both pop and treatment differences are significant
 TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_stage == "seedling") %>%filter(Population == "Butte Valley")))
@@ -313,7 +324,7 @@ TukeyHSD(aov(POSE_survival_stem_count ~ Treatment, data = growth%>%filter(Life_s
 summary(lme(POSE_survival_stem_count ~ Treatment*Population, random = ~ 1|Replicate, data = growth))
 
 # seedling POSE total biomass by population
-fig_biomass_None <- ggplot(summary_biomass%>% filter(Competition == "None"), aes(x = Population, y = mean, col = as.factor(Treatment))) +
+fig_biomass_None <- ggplot(summary_biomass%>% filter(Competition == "None"), aes(x = Population, y = mean)) +
                     theme(text = element_text(size=15),
                         panel.grid.major = element_blank(),
                         panel.grid.minor = element_blank(),
@@ -325,13 +336,19 @@ fig_biomass_None <- ggplot(summary_biomass%>% filter(Competition == "None"), aes
                         axis.title.y = element_blank(),
                         #axis.title.x = element_blank(),
                         axis.text.x = element_text(angle = 90))+
-                  geom_hline(yintercept = c(0, 0.1, 0.3, 0.5), color = "#cccccc")+
-                  geom_point(position = position_dodge(width = 0.5))+
-                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
-                  scale_y_log10(limits = c(0.09,0.8))+
+                  geom_hline(yintercept = c(0.2, 0.4, 0.6), color = "#cccccc")+
+                  geom_point(aes(col = as.factor(Treatment)), position = position_dodge(width = 0.5))+
+                  geom_errorbar(aes(ymin = mean-se, ymax = mean+se, col = as.factor(Treatment)), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+                  #scale_y_log10(limits = c(0.09,0.8))+
                   ylab(bquote(Total~Biomass~(g))) +
-                  annotate("text", label = c( "*", "*", "*",  "*", "*"), x = c(1, 2, 3, 4, 5), y = 0.6, size = 8)+
-                  scale_color_manual(values=c( "#CE026E", "#D6AACE"))
+                  #annotate("text", label = c( "*", "*", "*",  "*", "*"), x = c(1, 2, 3, 4, 5), y = 0.6, size = 8)+
+                  scale_color_manual(values=c( "#CE026E", "#D6AACE"))+
+                  geom_bracket(
+                    xmin = c(0.8, 1.8, 2.8, 3.8, 4.8), xmax = c(1.2, 2.2, 3.2, 4.2, 5.2),
+                    y.position = c(0.6, 0.6, 0.6, 0.6, 0.5), label = c("*", "*", "*",  "*", "*"),
+                    tip.length = 0.01, label.size = 6
+                  )+
+                  ylim(0, 0.7)
 fig_biomass_BRTE <- ggplot(summary_biomass%>% filter(Competition == "BRTE"), aes(x = Population, y = mean, col = Treatment)) +
   theme(text = element_text(size=15),
         panel.grid.major = element_blank(),
@@ -349,7 +366,7 @@ fig_biomass_BRTE <- ggplot(summary_biomass%>% filter(Competition == "BRTE"), aes
   geom_errorbar(aes(ymin = mean-se, ymax = mean+se), width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
   scale_y_log10()+
   ylab(bquote(Total~Biomass~(g))) +
-  annotate("text", label = c( "*"), x = c( 5), y = 0.023, size = 8)+
+  #annotate("text", label = c( "*"), x = c( 5), y = 0.023, size = 8)+
   scale_color_manual(values=c( "#FF8C07", "#FBD947"))
 
 # Stats for interaction of treatment on POSE biomass

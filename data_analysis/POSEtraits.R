@@ -558,12 +558,26 @@ ann_text_traits_2 <- data.frame(x = c(2.5, 0.9, 0, 0, 2, 0.5),
                                           "None R2 = 0.05, p = 0.01", "None R2 = 0.27, p < 0.001", "None R2 = 0.06, p = 0.01"),
                                 trait =  c("Emergence", "Length", "PropF", "RMR", "SRL", "Tips"))
 
+trait_names <- list(
+  'Emergence' = "Emergence Date",
+  'Height' = "Height",
+  'LDMC' = "Leaf Dry Matter Content",
+  'Length' = "Root Length",
+  'PropF' = "Proportion Fine Roots",
+  'RMR' = "Root Mass Ratio",
+  'SLA' = "Specific Leaf Area",
+  'SRL' = "Specific Root Length",
+  'Tips' = "Root Tips"
+)
+trait_labeller <- function(variable,value){
+  return(trait_names[value])
+}
 ggplot(survival_trait%>%dplyr::select(-TotalBiomass)%>%
          pivot_longer(cols = Length:Emergence, names_to = "trait", values_to = "value")%>%
          filter(trait%in%c("Emergence", "Height", "SLA", "LDMC", "RMR",  "Tips", "PropF", "SRL", "Length")), 
        aes(x = value, y = POSE_survival_stem_count/25))+
   geom_jitter(aes(col = Treatment))+
-  facet_wrap(~trait, scale = "free", ncol = 3)+
+  facet_wrap(~trait, scale = "free", ncol = 3,  labeller=trait_labeller)+
   theme(text = element_text(size=12),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
@@ -856,7 +870,7 @@ ggplot(delta_survival_trait, aes(x = delta_trait, y = delta_est))+
         axis.line = element_line(colour = "black"),
         panel.border = element_rect(colour = "black", fill = NA, size = 1.2),
         axis.title = element_text(size = 15))+
-  facet_wrap(~trait, scale = "free", ncol = 3)+
+  facet_wrap(~trait, scale = "free", ncol = 3, labeller=trait_labeller)+
   geom_vline(xintercept = 0, linetype = "dashed")+
   geom_hline(yintercept = 0, linetype = "dashed")+
   geom_text(aes(col = Competition, label=Population),hjust="inward", vjust="inward",show.legend = FALSE)+
