@@ -1099,3 +1099,67 @@ ggplot(delta_survival_trait, aes(x = delta_trait, y = delta_est))+
 # # Graph them together
 # ggarrange(f1_V3, f2_v3, f3_v3, f4_v3, ncol = 2, nrow = 2, labels = c("(a)", "(b)", "(c)", "(d)"),
 #           font.label = list(size = 15), common.legend = TRUE, legend = "right", label.x = -.02, label.y = .99)
+
+#--Seed mass summary----#
+summarizeseeds <- seeds %>% 
+  group_by(Population,Species) %>%
+  filter(!is.na(Weight_g)) %>%
+  filter(Population %in% c("Butte Valley", "Steens", "EOARC", "Water Canyon")) %>%
+  summarise(meanseed=mean(Weight_g),seseed=se(Weight_g))
+summarizeseeds$Population <- ordered(as.factor(summarizeseeds$Population), levels = c("Butte Valley","Steens","EOARC",
+                                                                                                  "Water Canyon"))
+f_seeds <- ggplot(summarizeseeds, aes(x = Population, y = meanseed/10))+
+                geom_point()+
+                theme(text = element_text(size=15),
+                      panel.grid.major = element_blank(),
+                      panel.grid.minor = element_blank(),
+                      panel.background = element_blank(),
+                      axis.line = element_line(colour = "black"),
+                      legend.position = "none",
+                      legend.title = element_blank(),
+                      axis.title = element_text(size = 15))+
+                geom_errorbar(aes(ymin = meanseed/10-seseed/10, ymax = meanseed/10+seseed/10), 
+                              width = 0.2, alpha = 0.9, size = 1,position = position_dodge(width = 0.5))+
+                ylab("Seed mass (g)")
+# Did seed mass relate to any seedling traits??
+seedsmass_to_traits <- trait_master %>%
+  inner_join(., summarizeseeds)
+pairs(~meanseed + Emergence+ PropF+Length, seedsmass_to_traits)
+# Did seed mass relate to establishment rate?
+seedsmass_to_growth <- growth %>%
+  inner_join(., summarizeseeds)
+pairs(~meanseed + BRTE_stem_count + POSE_survival_stem_count, seedsmass_to_growth)
+f_seed_establishment <- ggplot(seedsmass_to_growth, aes(x = meanseed/10, y = POSE_survival_stem_count/25))+
+                            geom_jitter()+
+                            theme(text = element_text(size=15),
+                                  panel.grid.major = element_blank(),
+                                  panel.grid.minor = element_blank(),
+                                  panel.background = element_blank(),
+                                  axis.line = element_line(colour = "black"),
+                                  legend.position = "none",
+                                  legend.title = element_blank(),
+                                  axis.title = element_text(size = 15))+
+                                  #axis.title.y = element_blank())
+                                  #axis.title.x = element_blank(),
+                                  #axis.text.x = element_text(angle = 90))
+                            geom_smooth(method = lm)+
+                            ylab("Establishment Rate")+
+                            xlab("Seed mass (g)")
+summary(lm(POSE_survival_stem_count ~ meanseed, seedsmass_to_growth))
+# Did seed mass relate to biomass?
+f_seed_biomass <- ggplot(seedsmass_to_traits, aes(x = meanseed/10, y = TotalBiomass))+
+                      geom_jitter()+
+                      geom_smooth(method = lm)+
+                      theme(text = element_text(size=15),
+                            panel.grid.major = element_blank(),
+                            panel.grid.minor = element_blank(),
+                            panel.background = element_blank(),
+                            axis.line = element_line(colour = "black"),
+                            legend.position = "none",
+                            legend.title = element_blank(),
+                            axis.title = element_text(size = 15))+
+                      ylab("Total biomass (g)")+
+                      xlab("Seed mass (g)")
+summary(lm(TotalBiomass ~ meanseed, seedsmass_to_traits))
+ggarrange(f_seeds, f_seed_establishment, f_seed_biomass, ncol = 3, nrow = 1, labels = c("(a)", "(b)", "(c)"),
+                   font.label = list(size = 12))
