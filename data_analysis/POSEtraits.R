@@ -1108,6 +1108,7 @@ summarizeseeds <- seeds %>%
   summarise(meanseed=mean(Weight_g),seseed=se(Weight_g))
 summarizeseeds$Population <- ordered(as.factor(summarizeseeds$Population), levels = c("Butte Valley","Steens","EOARC",
                                                                                                   "Water Canyon"))
+summary(aov(Weight_g~ Population, seeds))
 f_seeds <- ggplot(summarizeseeds, aes(x = Population, y = meanseed/10))+
                 geom_point()+
                 theme(text = element_text(size=15),
